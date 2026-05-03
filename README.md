@@ -147,7 +147,8 @@ ISAAC_DEVICE=cuda:1 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.s
 ```
 
 For drawer MimicGen, the default grasp detector expects the Panda fingers to
-cross below `-0.01` near the handle. Avoid setting
+cross below `-0.01` while the EE is within `0.10m` of the selected handle. These
+values were chosen from the 50-demo top/bottom source set. Avoid setting
 `OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD` to a positive value, because that can make
 the `grasp` signal true from the first frame and MimicGen cannot find a subtask
 transition.

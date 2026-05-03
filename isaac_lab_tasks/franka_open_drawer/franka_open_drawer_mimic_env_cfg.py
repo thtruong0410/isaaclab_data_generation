@@ -98,7 +98,7 @@ def handle_is_grasped(
     softer pose-alignment score, together with proximity and partial gripper closure.
     """
     if dist_threshold is None:
-        dist_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD", 0.11)
+        dist_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD", 0.10)
     if gripper_threshold is None:
         gripper_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD", -0.01)
     if align_threshold is None:
@@ -123,12 +123,15 @@ def handle_is_grasped(
     finger_pos = robot.data.joint_pos[:, finger_ids]
     gripper_closed = finger_pos.max(dim=1).values < gripper_threshold
 
-    ee_fingertips_w = env.scene[ee_frame_name].data.target_pos_w[:, 1:, :]
-    lfinger_pos = ee_fingertips_w[:, 0, :]
-    rfinger_pos = ee_fingertips_w[:, 1, :]
-    wrap_aligned = (rfinger_pos[:, 2] < handle_pos[:, 2]) & (lfinger_pos[:, 2] > handle_pos[:, 2])
-    pose_aligned = _align_ee_to_handle(ee_quat, handle_quat) > align_threshold
-    aligned = wrap_aligned if require_wrap_alignment else (wrap_aligned | pose_aligned)
+    if align_threshold <= -1.0 and not require_wrap_alignment:
+        aligned = torch.ones_like(close_enough, dtype=torch.bool)
+    else:
+        ee_fingertips_w = env.scene[ee_frame_name].data.target_pos_w[:, 1:, :]
+        lfinger_pos = ee_fingertips_w[:, 0, :]
+        rfinger_pos = ee_fingertips_w[:, 1, :]
+        wrap_aligned = (rfinger_pos[:, 2] < handle_pos[:, 2]) & (lfinger_pos[:, 2] > handle_pos[:, 2])
+        pose_aligned = _align_ee_to_handle(ee_quat, handle_quat) > align_threshold
+        aligned = wrap_aligned if require_wrap_alignment else (wrap_aligned | pose_aligned)
     return (close_enough & gripper_closed & aligned).unsqueeze(-1).float()
 
 
