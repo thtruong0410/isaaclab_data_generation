@@ -15,18 +15,20 @@ def _as_xyz(tensor: torch.Tensor) -> torch.Tensor:
 
 
 class EeTargetLineVisualizer:
-    """Viewport-only line from end-effector to the nearest task target handle."""
+    """Viewport-only EE-to-target line or axis component visualization."""
 
     def __init__(
         self,
         spec: TaskSuiteSpec,
         *,
         enabled: bool,
+        mode: str = "line",
         color: tuple[float, float, float, float] = (0.0, 1.0, 1.0, 1.0),
         thickness: float = 5.0,
     ):
         self.spec = spec
         self.enabled = enabled
+        self.mode = mode
         self.color = color
         self.thickness = thickness
         self._draw_interface = None
@@ -47,7 +49,7 @@ class EeTargetLineVisualizer:
 
         try:
             ee_pos = _as_xyz(env.scene["ee_frame"].data.target_pos_w).detach()
-            target_pos = self._nearest_target_pos(env, ee_pos).detach()
+            handle_target_pos = self._nearest_target_pos(env, ee_pos).detach()
         except Exception as exc:  # noqa: BLE001 - debug visualization must not break collection.
             if not self._warned:
                 print(f"[TaskSuite] EE-target debug line disabled: {exc}")
@@ -55,13 +57,32 @@ class EeTargetLineVisualizer:
             self.clear()
             return None
 
+        source_pos, line_target_pos, colors = self._line_segments(ee_pos, handle_target_pos)
         self.clear()
-        source = ee_pos.cpu().tolist()
-        target = target_pos.cpu().tolist()
-        colors = [list(self.color)] * len(source)
+        source = source_pos.cpu().tolist()
+        target = line_target_pos.cpu().tolist()
         thicknesses = [self.thickness] * len(source)
         self._draw_interface.draw_lines(source, target, colors, thicknesses)
-        return float(torch.linalg.vector_norm(target_pos - ee_pos, dim=-1).min().item())
+        return float(torch.linalg.vector_norm(handle_target_pos - ee_pos, dim=-1).min().item())
+
+    def _line_segments(self, ee_pos: torch.Tensor, target_pos: torch.Tensor):
+        if self.mode == "axes":
+            x_end = torch.stack((target_pos[:, 0], ee_pos[:, 1], ee_pos[:, 2]), dim=-1)
+            y_end = torch.stack((ee_pos[:, 0], target_pos[:, 1], ee_pos[:, 2]), dim=-1)
+            z_end = torch.stack((ee_pos[:, 0], ee_pos[:, 1], target_pos[:, 2]), dim=-1)
+
+            sources = ee_pos.repeat(3, 1)
+            targets = torch.cat((x_end, y_end, z_end), dim=0)
+            num_envs = ee_pos.shape[0]
+            colors = (
+                [[1.0, 0.0, 0.0, 1.0]] * num_envs
+                + [[0.0, 1.0, 0.0, 1.0]] * num_envs
+                + [[0.1, 0.35, 1.0, 1.0]] * num_envs
+            )
+            return sources, targets, colors
+
+        colors = [list(self.color)] * ee_pos.shape[0]
+        return ee_pos, target_pos, colors
 
     def _nearest_target_pos(self, env, ee_pos: torch.Tensor) -> torch.Tensor:
         target_positions = self._candidate_target_positions(env)

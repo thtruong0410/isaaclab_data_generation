@@ -87,6 +87,12 @@ handle:
 DRAW_EE_TARGET_LINE=1 bash scripts/collect_raw.sh open_drawer_sphere 10
 ```
 
+Show X/Y/Z component lengths from the end-effector origin:
+
+```bash
+DRAW_EE_TARGET_LINE=1 EE_TARGET_VIS_MODE=axes bash scripts/collect_raw.sh open_drawer_sphere 10
+```
+
 ## Run MimicGen
 
 ```bash

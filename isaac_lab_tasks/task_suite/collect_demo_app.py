@@ -27,6 +27,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
         action="store_true",
         help="Draw a viewport-only debug line from ee_frame to the nearest task handle.",
     )
+    parser.add_argument("--ee_target_vis_mode", choices=("line", "axes"), default="line")
     parser.add_argument("--ee_target_line_thickness", type=float, default=5.0)
     parser.add_argument(
         "--action_smoothing_alpha",
@@ -101,6 +102,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
         line_visualizer = EeTargetLineVisualizer(
             spec,
             enabled=args_cli.draw_ee_target_line and not args_cli.headless,
+            mode=args_cli.ee_target_vis_mode,
             thickness=args_cli.ee_target_line_thickness,
         )
 

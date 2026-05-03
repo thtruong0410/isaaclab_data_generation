@@ -29,6 +29,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
     parser.add_argument("--rot_sensitivity", type=float, default=None)
     parser.add_argument("--draw_ee_target_line", action="store_true",
                         help="Draw a viewport-only debug line from ee_frame to the nearest task handle.")
+    parser.add_argument("--ee_target_vis_mode", choices=("line", "axes"), default="line")
     parser.add_argument("--ee_target_line_thickness", type=float, default=5.0)
     parser.add_argument("--action_smoothing_alpha", type=float, default=None,
                         help="Low-pass filter coefficient for teleop actions. Smaller = smoother.")
@@ -161,6 +162,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
             line_visualizer = EeTargetLineVisualizer(
                 spec,
                 enabled=args_cli.draw_ee_target_line and not args_cli.headless,
+                mode=args_cli.ee_target_vis_mode,
                 thickness=args_cli.ee_target_line_thickness,
             )
 

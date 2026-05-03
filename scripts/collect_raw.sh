@@ -20,6 +20,7 @@ OUTPUT_DIR="${3:-$DATA_ROOT/source/$SPEC}"
 BUCKET_PRESET="${BUCKET_PRESET:-}"
 OVERWRITE="${OVERWRITE:-0}"
 DRAW_EE_TARGET_LINE="${DRAW_EE_TARGET_LINE:-0}"
+EE_TARGET_VIS_MODE="${EE_TARGET_VIS_MODE:-line}"
 EE_TARGET_LINE_THICKNESS="${EE_TARGET_LINE_THICKNESS:-}"
 
 ensure_data_env
@@ -41,6 +42,7 @@ DEBUG_VIS_ARGS=()
 case "$DRAW_EE_TARGET_LINE" in
     1|true|TRUE|yes|YES|on|ON)
         DEBUG_VIS_ARGS+=(--draw_ee_target_line)
+        DEBUG_VIS_ARGS+=(--ee_target_vis_mode "$EE_TARGET_VIS_MODE")
         ;;
 esac
 if [ -n "$EE_TARGET_LINE_THICKNESS" ]; then
