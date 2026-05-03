@@ -7,7 +7,7 @@ import gymnasium as gym
 
 
 gym.register(
-    id="Isaac-Close-Drawer-DataGen-Franka-IK-Rel-v0",
+    id="Isaac-Close-Drawer-GR00T-Franka-IK-Rel-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     kwargs={
         "env_cfg_entry_point": (
@@ -18,7 +18,7 @@ gym.register(
 )
 
 gym.register(
-    id="Isaac-Close-Drawer-DataGen-Franka-IK-Rel-Mimic-v0",
+    id="Isaac-Close-Drawer-GR00T-Franka-IK-Rel-Mimic-v0",
     entry_point="isaac_lab_tasks.franka_close_drawer.franka_close_drawer_mimic_env:FrankaCloseDrawerMimicEnv",
     kwargs={
         "env_cfg_entry_point": (
