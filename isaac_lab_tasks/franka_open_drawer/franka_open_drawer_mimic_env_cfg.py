@@ -100,9 +100,9 @@ def handle_is_grasped(
     if dist_threshold is None:
         dist_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD", 0.11)
     if gripper_threshold is None:
-        gripper_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD", 0.055)
+        gripper_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD", -0.01)
     if align_threshold is None:
-        align_threshold = _get_env_float("OPEN_DRAWER_MIMIC_ALIGN_THRESHOLD", 0.15)
+        align_threshold = _get_env_float("OPEN_DRAWER_MIMIC_ALIGN_THRESHOLD", -1.0)
     if require_wrap_alignment is None:
         require_wrap_alignment = os.getenv("OPEN_DRAWER_MIMIC_REQUIRE_WRAP_ALIGNMENT", "0").strip().lower() in {
             "1",
