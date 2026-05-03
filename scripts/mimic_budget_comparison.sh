@@ -6,15 +6,15 @@ set -euo pipefail
 # data/source_subsets/<SETUP_NAME>_<N>/ and calls scripts/mimic_generate.sh.
 #
 # Usage:
-#   bash scripts/mimic_budget_comparison.sh SPEC RAW_DIR [MIMIC_ROOT] [NUM_MIMIC_DEMOS] [SETUP_NAME]
+#   bash scripts/mimic_budget_comparison.sh SPEC [RAW_DIR] [MIMIC_ROOT] [NUM_MIMIC_DEMOS] [SETUP_NAME]
 #
 # Example:
-#   OPEN_DRAWER_TARGET_DRAWER=both HEADLESS=1 bash scripts/mimic_budget_comparison.sh \
-#       open_drawer_sphere \
-#       data/source/open_drawer_sphere_top_bottom \
-#       data/mimic \
-#       1000 \
-#       open_drawer_sphere_top_bottom
+#   HEADLESS=1 bash scripts/mimic_budget_comparison.sh open_drawer_sphere
+#
+# The default convention is:
+#   raw_dir    = data/source/<SPEC>_top_bottom
+#   mimic root = data/mimic
+#   setup name = <SPEC>_top_bottom
 #
 # Optional env vars:
 #   BUDGETS="10 20 30 40 50"
@@ -33,11 +33,12 @@ MIMIC_ROOT_ARG="${3:-}"
 NUM_MIMIC_DEMOS="${4:-${DEFAULT_MIMIC_DEMOS:-1000}}"
 SETUP_NAME="${5:-}"
 
-if [ -z "$SPEC" ] || [ -z "$RAW_DIR" ]; then
-    echo "Usage: bash scripts/mimic_budget_comparison.sh SPEC RAW_DIR [MIMIC_ROOT] [NUM_MIMIC_DEMOS] [SETUP_NAME]" >&2
+if [ -z "$SPEC" ]; then
+    echo "Usage: bash scripts/mimic_budget_comparison.sh SPEC [RAW_DIR] [MIMIC_ROOT] [NUM_MIMIC_DEMOS] [SETUP_NAME]" >&2
     exit 1
 fi
 
+RAW_DIR="${RAW_DIR:-$DATA_ROOT/source/${SPEC}_top_bottom}"
 MIMIC_ROOT="${MIMIC_ROOT_ARG:-$DATA_ROOT/mimic}"
 SETUP_NAME="${SETUP_NAME:-$(basename "$RAW_DIR")}"
 BUDGETS="${BUDGETS:-10 20 30 40 50}"

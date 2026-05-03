@@ -5,14 +5,15 @@ set -euo pipefail
 # Original raw files are never modified.
 #
 # Usage:
-#   bash scripts/interleave_raw_demos.sh SPEC FIRST_DIR SECOND_DIR OUTPUT_DIR [MAX_DEMOS]
+#   bash scripts/interleave_raw_demos.sh SPEC [FIRST_DIR SECOND_DIR OUTPUT_DIR] [MAX_DEMOS]
 #
 # Example:
-#   bash scripts/interleave_raw_demos.sh \
-#       open_drawer_sphere \
-#       data/source/open_drawer_sphere_top \
-#       data/source/open_drawer_sphere_bottom \
-#       data/source/open_drawer_sphere_top_bottom
+#   bash scripts/interleave_raw_demos.sh open_drawer_sphere
+#
+# The default convention is:
+#   first  = data/source/<SPEC>_top
+#   second = data/source/<SPEC>_bottom
+#   output = data/source/<SPEC>_top_bottom
 #
 # Optional env vars:
 #   FIRST_LABEL=top       label written to manifest.tsv for FIRST_DIR
@@ -29,12 +30,16 @@ SPEC="${1:-}"
 FIRST_DIR="${2:-}"
 SECOND_DIR="${3:-}"
 OUTPUT_DIR="${4:-}"
-MAX_DEMOS="${5:-}"
+MAX_DEMOS="${5:-${MAX_DEMOS:-}}"
 
-if [ -z "$SPEC" ] || [ -z "$FIRST_DIR" ] || [ -z "$SECOND_DIR" ] || [ -z "$OUTPUT_DIR" ]; then
-    echo "Usage: bash scripts/interleave_raw_demos.sh SPEC FIRST_DIR SECOND_DIR OUTPUT_DIR [MAX_DEMOS]" >&2
+if [ -z "$SPEC" ]; then
+    echo "Usage: bash scripts/interleave_raw_demos.sh SPEC [FIRST_DIR SECOND_DIR OUTPUT_DIR] [MAX_DEMOS]" >&2
     exit 1
 fi
+
+FIRST_DIR="${FIRST_DIR:-$DATA_ROOT/source/${SPEC}_top}"
+SECOND_DIR="${SECOND_DIR:-$DATA_ROOT/source/${SPEC}_bottom}"
+OUTPUT_DIR="${OUTPUT_DIR:-$DATA_ROOT/source/${SPEC}_top_bottom}"
 
 FIRST_LABEL="${FIRST_LABEL:-top}"
 SECOND_LABEL="${SECOND_LABEL:-bottom}"

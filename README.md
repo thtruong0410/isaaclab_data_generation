@@ -85,15 +85,13 @@ folder for MimicGen, copy them into a new interleaved folder:
 
 ```bash
 # 25 top + 25 bottom -> 50 mixed raw demos:
-bash scripts/interleave_raw_demos.sh \
-  open_drawer_sphere \
-  data/source/open_drawer_sphere_top \
-  data/source/open_drawer_sphere_bottom \
-  data/source/open_drawer_sphere_top_bottom
+bash scripts/interleave_raw_demos.sh open_drawer_sphere
 ```
 
 The source folders stay unchanged. The output order is top, bottom, top,
-bottom, and a `manifest.tsv` records where every copied demo came from.
+bottom, and a `manifest.tsv` records where every copied demo came from. By
+default it reads `data/source/<spec>_top` and `data/source/<spec>_bottom`,
+then writes `data/source/<spec>_top_bottom`.
 
 Show a viewport debug line from the end-effector to the nearest door/drawer
 handle:
@@ -138,12 +136,7 @@ controls the output folder names under `data/mimic/`.
 ```bash
 cd /home/ntruong/Truong/isaaclab_data_generation
 
-OPEN_DRAWER_TARGET_DRAWER=both HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh \
-  open_drawer_sphere \
-  data/source/open_drawer_sphere_top_bottom \
-  data/mimic \
-  1000 \
-  open_drawer_sphere_top_bottom
+HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh open_drawer_sphere
 ```
 
 This creates:
@@ -164,18 +157,8 @@ For normal drawer demos, use the same flow with `open_drawer_normal` and a
 normal mixed source folder:
 
 ```bash
-bash scripts/interleave_raw_demos.sh \
-  open_drawer_normal \
-  data/source/open_drawer_normal_top \
-  data/source/open_drawer_normal_bottom \
-  data/source/open_drawer_normal_top_bottom
-
-OPEN_DRAWER_TARGET_DRAWER=both HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh \
-  open_drawer_normal \
-  data/source/open_drawer_normal_top_bottom \
-  data/mimic \
-  1000 \
-  open_drawer_normal_top_bottom
+bash scripts/interleave_raw_demos.sh open_drawer_normal
+HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh open_drawer_normal
 ```
 
 ## Run a group
