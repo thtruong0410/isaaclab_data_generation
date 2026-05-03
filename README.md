@@ -153,6 +153,18 @@ values were chosen from the 50-demo top/bottom source set. Avoid setting
 the `grasp` signal true from the first frame and MimicGen cannot find a subtask
 transition.
 
+You can re-check these thresholds on any raw drawer folder:
+
+```bash
+python scripts/analyze_drawer_grasp_thresholds.py data/source/open_drawer_sphere_top_bottom
+```
+
+A good threshold must produce `grasp=false` at the first frame, then a later
+`false -> true` transition for every source demo. For the current 50-demo
+top/bottom set, `finger < -0.01` gives 50/50 transitions and the largest EE
+distance at that first crossing is about `0.0896m`, so the default `0.10m`
+distance threshold leaves margin.
+
 This creates:
 
 ```text
