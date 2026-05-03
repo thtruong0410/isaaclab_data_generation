@@ -57,6 +57,9 @@ case "${HEADLESS:-1}" in
         APP_LAUNCH_ARGS=(--headless --enable_cameras)
         ;;
 esac
+if [ -n "${ISAAC_DEVICE:-}" ]; then
+    APP_LAUNCH_ARGS+=(--device "$ISAAC_DEVICE")
+fi
 
 echo ""
 echo "============================================"

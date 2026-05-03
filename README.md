@@ -139,6 +139,13 @@ cd /home/ntruong/Truong/isaaclab_data_generation
 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh open_drawer_sphere
 ```
 
+To select a specific IsaacLab CUDA device, prefer `ISAAC_DEVICE` instead of
+`CUDA_VISIBLE_DEVICES`:
+
+```bash
+ISAAC_DEVICE=cuda:1 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh open_drawer_sphere
+```
+
 This creates:
 
 ```text

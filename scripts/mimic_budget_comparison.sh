@@ -21,6 +21,7 @@ set -euo pipefail
 #   SUBSET_ROOT=data/source_subsets
 #   SKIP_EXISTING=1
 #   OVERWRITE=1              forwarded to mimic_generate.sh
+#   ISAAC_DEVICE=cuda:1      forwarded to IsaacLab AppLauncher
 #   DRY_RUN=1
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
