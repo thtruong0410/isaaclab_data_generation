@@ -1,0 +1,19 @@
+# Generated data and logs
+data/
+logs/
+
+# Python cache/build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Local/editor files
+.env
+.DS_Store
+.vscode/
+.idea/
+
+# Isaac/Omniverse temporary output
+*.log
+*.tmp
