@@ -19,6 +19,8 @@ NUM_DEMOS="${2:-${DEFAULT_RAW_DEMOS:-10}}"
 OUTPUT_DIR="${3:-$DATA_ROOT/source/$SPEC}"
 BUCKET_PRESET="${BUCKET_PRESET:-}"
 OVERWRITE="${OVERWRITE:-0}"
+DRAW_EE_TARGET_LINE="${DRAW_EE_TARGET_LINE:-0}"
+EE_TARGET_LINE_THICKNESS="${EE_TARGET_LINE_THICKNESS:-}"
 
 ensure_data_env
 print_env_summary
@@ -35,7 +37,20 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
+DEBUG_VIS_ARGS=()
+case "$DRAW_EE_TARGET_LINE" in
+    1|true|TRUE|yes|YES|on|ON)
+        DEBUG_VIS_ARGS+=(--draw_ee_target_line)
+        ;;
+esac
+if [ -n "$EE_TARGET_LINE_THICKNESS" ]; then
+    DEBUG_VIS_ARGS+=(--ee_target_line_thickness "$EE_TARGET_LINE_THICKNESS")
+fi
+
 echo "[collect] spec=$SPEC mode=$COLLECTION_MODE demos=$NUM_DEMOS output=$OUTPUT_DIR"
+if [ ${#DEBUG_VIS_ARGS[@]} -gt 0 ]; then
+    echo "[collect] debug visualization: ${DEBUG_VIS_ARGS[*]}"
+fi
 
 for i in $(seq 1 "$NUM_DEMOS"); do
     FILE="$OUTPUT_DIR/${DEMO_PREFIX}_${i}.hdf5"
@@ -64,6 +79,7 @@ for i in $(seq 1 "$NUM_DEMOS"); do
             --side_cam_rot_jitter_deg 3.0 \
             --light_intensity_range 2200 4200 \
             --light_color_jitter 0.08 \
+            "${DEBUG_VIS_ARGS[@]}" \
             --enable_cameras
     else
         PYTHONPATH="$DATA_GEN_ROOT${PYTHONPATH:+:$PYTHONPATH}" TERM="${TERM:-xterm}" bash "$ISAACLAB_SH" -p "$COLLECT_SCRIPT" \
@@ -71,6 +87,7 @@ for i in $(seq 1 "$NUM_DEMOS"); do
             --teleop_device "${TELEOP_DEVICE:-keyboard}" \
             --dataset_file "$FILE" \
             --num_demos 1 \
+            "${DEBUG_VIS_ARGS[@]}" \
             --enable_cameras
     fi
 

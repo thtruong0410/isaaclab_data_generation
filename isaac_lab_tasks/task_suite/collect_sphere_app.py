@@ -8,6 +8,7 @@ import time
 
 from isaaclab.app import AppLauncher
 
+from .debug_visualization import EeTargetLineVisualizer
 from .demo_collection_utils import ActionSmoother, apply_collection_diversity, build_teleop_device
 from .runtime import ensure_project_root_on_path, import_object_by_path, import_registration_modules
 from .types import TaskSuiteSpec
@@ -26,6 +27,9 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
     parser.add_argument("--step_hz", type=int, default=None)
     parser.add_argument("--pos_sensitivity", type=float, default=None)
     parser.add_argument("--rot_sensitivity", type=float, default=None)
+    parser.add_argument("--draw_ee_target_line", action="store_true",
+                        help="Draw a viewport-only debug line from ee_frame to the nearest task handle.")
+    parser.add_argument("--ee_target_line_thickness", type=float, default=5.0)
     parser.add_argument("--action_smoothing_alpha", type=float, default=None,
                         help="Low-pass filter coefficient for teleop actions. Smaller = smoother.")
     parser.add_argument("--num_demos", type=int, default=0,
@@ -154,6 +158,11 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
             recorded = 0
             success_count = 0
             should_reset = False
+            line_visualizer = EeTargetLineVisualizer(
+                spec,
+                enabled=args_cli.draw_ee_target_line and not args_cli.headless,
+                thickness=args_cli.ee_target_line_thickness,
+            )
 
             def request_reset():
                 nonlocal should_reset
@@ -251,6 +260,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                     actions = action.repeat(env.num_envs, 1)
 
                     env.step(actions)
+                    line_visualizer.update(env)
                     update_label()
 
                     if success_term is not None and not should_reset:
@@ -288,6 +298,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
 
                     rate_limiter.sleep(env)
 
+            line_visualizer.clear()
             return recorded
 
         output_dir = os.path.dirname(os.path.abspath(args_cli.dataset_file))

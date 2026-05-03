@@ -8,6 +8,7 @@ import time
 
 from isaaclab.app import AppLauncher
 
+from .debug_visualization import EeTargetLineVisualizer
 from .demo_collection_utils import ActionSmoother, build_teleop_device
 from .runtime import ensure_project_root_on_path, import_registration_modules
 from .types import TaskSuiteSpec
@@ -21,6 +22,12 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
     parser.add_argument("--step_hz", type=int, default=None)
     parser.add_argument("--pos_sensitivity", type=float, default=None)
     parser.add_argument("--rot_sensitivity", type=float, default=None)
+    parser.add_argument(
+        "--draw_ee_target_line",
+        action="store_true",
+        help="Draw a viewport-only debug line from ee_frame to the nearest task handle.",
+    )
+    parser.add_argument("--ee_target_line_thickness", type=float, default=5.0)
     parser.add_argument(
         "--action_smoothing_alpha",
         type=float,
@@ -91,6 +98,11 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
 
         os.makedirs(env_cfg.recorders.dataset_export_dir_path, exist_ok=True)
         env = gym.make(args_cli.task, cfg=env_cfg).unwrapped
+        line_visualizer = EeTargetLineVisualizer(
+            spec,
+            enabled=args_cli.draw_ee_target_line and not args_cli.headless,
+            thickness=args_cli.ee_target_line_thickness,
+        )
 
         def request_reset():
             nonlocal should_reset
@@ -146,6 +158,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                 action = smoother.filter(teleop.advance())
                 actions = action.repeat(env.num_envs, 1)
                 env.step(actions)
+                line_visualizer.update(env)
                 update_label()
 
                 if success_term is not None and not should_reset:
@@ -183,6 +196,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
 
                 rate_limiter.sleep(env)
 
+        line_visualizer.clear()
         env.close()
         print(f"\n[TaskSuite] Session complete — {recorded} demos saved to {args_cli.dataset_file}")
     finally:

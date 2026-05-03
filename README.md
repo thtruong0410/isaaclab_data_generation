@@ -80,6 +80,13 @@ Raw demos are written to:
 data/source/<spec>/*.hdf5
 ```
 
+Show a viewport debug line from the end-effector to the nearest door/drawer
+handle:
+
+```bash
+DRAW_EE_TARGET_LINE=1 bash scripts/collect_raw.sh open_drawer_sphere 10
+```
+
 ## Run MimicGen
 
 ```bash
