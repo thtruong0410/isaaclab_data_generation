@@ -80,6 +80,21 @@ Raw demos are written to:
 data/source/<spec>/*.hdf5
 ```
 
+To keep separate top/bottom drawer collections but create one mixed source
+folder for MimicGen, copy them into a new interleaved folder:
+
+```bash
+# 25 top + 25 bottom -> 50 mixed raw demos:
+bash scripts/interleave_raw_demos.sh \
+  open_drawer_sphere \
+  data/source/open_drawer_sphere_top \
+  data/source/open_drawer_sphere_bottom \
+  data/source/open_drawer_sphere_top_bottom
+```
+
+The source folders stay unchanged. The output order is top, bottom, top,
+bottom, and a `manifest.tsv` records where every copied demo came from.
+
 Show a viewport debug line from the end-effector to the nearest door/drawer
 handle:
 
@@ -112,6 +127,55 @@ For example:
 data/mimic/open_drawer_normal/open_drawer_demos_merged.hdf5
 data/mimic/open_drawer_normal/open_drawer_demos_annotated.hdf5
 data/mimic/open_drawer_normal/open_drawer_demos_mimic.hdf5
+```
+
+## Budget MimicGen variants
+
+Use this when you have one source folder with at least 50 raw demos and want
+to compare 10, 20, 30, 40, and 50 source-demo budgets. The `SETUP_NAME`
+controls the output folder names under `data/mimic/`.
+
+```bash
+cd /home/ntruong/Truong/isaaclab_data_generation
+
+OPEN_DRAWER_TARGET_DRAWER=both HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh \
+  open_drawer_sphere \
+  data/source/open_drawer_sphere_top_bottom \
+  data/mimic \
+  1000 \
+  open_drawer_sphere_top_bottom
+```
+
+This creates:
+
+```text
+data/mimic/open_drawer_sphere_top_bottom_10/
+data/mimic/open_drawer_sphere_top_bottom_20/
+data/mimic/open_drawer_sphere_top_bottom_30/
+data/mimic/open_drawer_sphere_top_bottom_40/
+data/mimic/open_drawer_sphere_top_bottom_50/
+```
+
+Each run uses the first N demos from the raw folder. Temporary source subsets
+are symlinked under `data/source_subsets/<SETUP_NAME>_<N>/`, so the original
+raw HDF5 files are still untouched.
+
+For normal drawer demos, use the same flow with `open_drawer_normal` and a
+normal mixed source folder:
+
+```bash
+bash scripts/interleave_raw_demos.sh \
+  open_drawer_normal \
+  data/source/open_drawer_normal_top \
+  data/source/open_drawer_normal_bottom \
+  data/source/open_drawer_normal_top_bottom
+
+OPEN_DRAWER_TARGET_DRAWER=both HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh \
+  open_drawer_normal \
+  data/source/open_drawer_normal_top_bottom \
+  data/mimic \
+  1000 \
+  open_drawer_normal_top_bottom
 ```
 
 ## Run a group
