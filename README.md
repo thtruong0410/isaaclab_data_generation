@@ -153,7 +153,7 @@ closed enough.
 ```text
 OPEN_DRAWER_MIMIC_GRASP_MODE=joint
 OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD=0.12
-OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD=-0.01
+OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD=0.025
 ```
 
 The optional fingertip geometry detector is still available for experiments:
@@ -168,15 +168,15 @@ OPEN_DRAWER_MIMIC_REQUIRE_BOTH_FINGERTIPS=0
 You can switch detector modes without changing the raw data:
 
 ```text
-OPEN_DRAWER_MIMIC_GRASP_MODE=joint     # default: EE near handle + finger joint < -0.01
+OPEN_DRAWER_MIMIC_GRASP_MODE=joint     # default: EE near handle + replay finger joint < 0.025
 OPEN_DRAWER_MIMIC_GRASP_MODE=geometry  # fingertip geometry
 OPEN_DRAWER_MIMIC_GRASP_MODE=either    # geometry OR joint
 OPEN_DRAWER_MIMIC_GRASP_MODE=both      # geometry AND joint
 ```
 
-Avoid setting `OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD` to a positive value when
-using `joint`, because that can make the `grasp` signal true from the first
-frame and MimicGen cannot find a subtask transition.
+Avoid setting `OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD` above the open gripper value
+(`~0.04`) when using `joint`, because that can make the `grasp` signal true from
+the first frame and MimicGen cannot find a subtask transition.
 
 To debug why annotation does or does not detect `grasp`, enable replay logs:
 
@@ -202,10 +202,13 @@ python scripts/analyze_drawer_grasp_thresholds.py data/source/open_drawer_sphere
 
 A good detector must produce `grasp=false` at the first frame, then a later
 `false -> true` transition for every source demo. For the current 50-demo
-top/bottom set, `finger < -0.01` gives 50/50 transitions and the largest EE
-distance at that first crossing is about `0.0896m`. The `0.12m` distance
-threshold leaves about `3cm` of margin for replay/handle-frame differences while
-still requiring the gripper-close transition.
+top/bottom set, replay-state `finger < 0.025` gives 50/50 transitions and the
+largest EE distance at that first crossing is about `0.0896m`. The `0.12m`
+distance threshold leaves about `3cm` of margin for replay/handle-frame
+differences while still requiring the gripper-close transition. Note that
+`obs/joint_pos` stores a different signed convention; IsaacLab replay uses
+`states/articulation/robot/joint_position`, which starts near `0.04` and closes
+toward `0.014`.
 
 This creates:
 

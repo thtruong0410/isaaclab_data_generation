@@ -184,7 +184,7 @@ def handle_is_grasped(
     if dist_threshold is None:
         dist_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD", 0.12)
     if gripper_threshold is None:
-        gripper_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD", -0.01)
+        gripper_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD", 0.025)
     if fingertip_dist_threshold is None:
         fingertip_dist_threshold = _get_env_float("OPEN_DRAWER_MIMIC_FINGERTIP_DIST_THRESHOLD", 0.08)
     if fingertip_gap_threshold is None:

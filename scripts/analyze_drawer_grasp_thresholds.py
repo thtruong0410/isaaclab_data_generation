@@ -44,13 +44,15 @@ def _infer_label(path: Path) -> str:
 def _load_demo(path: Path, label: str | None = None) -> dict[str, object]:
     with h5py.File(path, "r") as handle:
         demo = handle["data/demo_0"]
-        finger_max = demo["obs/joint_pos"][()][:, -2:].max(axis=1)
+        obs_finger_max = demo["obs/joint_pos"][()][:, -2:].max(axis=1)
+        state_finger_max = demo["states/articulation/robot/joint_position"][()][:, -2:].max(axis=1)
         rel_dist = np.linalg.norm(demo["obs/rel_ee_drawer_distance"][()], axis=-1)
         drawer_pos = demo["obs/cabinet_joint_pos"][()][:, 0]
     return {
         "path": path,
         "label": label or _infer_label(path),
-        "finger_max": finger_max,
+        "obs_finger_max": obs_finger_max,
+        "state_finger_max": state_finger_max,
         "rel_dist": rel_dist,
         "drawer_pos": drawer_pos,
     }
@@ -75,7 +77,7 @@ def main() -> int:
         "--finger-thresholds",
         type=float,
         nargs="+",
-        default=[-0.002, -0.005, -0.008, -0.010, -0.012, -0.015, -0.018, -0.020, -0.022],
+        default=[0.035, 0.030, 0.025, 0.022, 0.020, 0.018, 0.015, 0.012, 0.010],
     )
     parser.add_argument(
         "--distance-thresholds",
@@ -97,19 +99,22 @@ def main() -> int:
     for label in ("top", "bottom", "all"):
         subset = demos if label == "all" else [demo for demo in demos if demo["label"] == label]
         print(f"\n[{label}] n={len(subset)}")
-        print("finger start:", _stats([float(demo["finger_max"][0]) for demo in subset]))
-        print("finger min:  ", _stats([float(demo["finger_max"].min()) for demo in subset]))
-        print("finger final:", _stats([float(demo["finger_max"][-1]) for demo in subset]))
-        print("dist min:    ", _stats([float(demo["rel_dist"].min()) for demo in subset]))
-        print("dist final:  ", _stats([float(demo["rel_dist"][-1]) for demo in subset]))
-        print("drawer final:", _stats([float(demo["drawer_pos"][-1]) for demo in subset]))
+        print("state finger start:", _stats([float(demo["state_finger_max"][0]) for demo in subset]))
+        print("state finger min:  ", _stats([float(demo["state_finger_max"].min()) for demo in subset]))
+        print("state finger final:", _stats([float(demo["state_finger_max"][-1]) for demo in subset]))
+        print("obs finger start:  ", _stats([float(demo["obs_finger_max"][0]) for demo in subset]))
+        print("obs finger min:    ", _stats([float(demo["obs_finger_max"].min()) for demo in subset]))
+        print("obs finger final:  ", _stats([float(demo["obs_finger_max"][-1]) for demo in subset]))
+        print("dist min:          ", _stats([float(demo["rel_dist"].min()) for demo in subset]))
+        print("dist final:        ", _stats([float(demo["rel_dist"][-1]) for demo in subset]))
+        print("drawer final:      ", _stats([float(demo["drawer_pos"][-1]) for demo in subset]))
 
-    print("\nTransition count by finger threshold only:")
+    print("\nTransition count by replay-state finger threshold only:")
     for finger_threshold in args.finger_thresholds:
         crossings = []
         dists = []
         for demo in demos:
-            signal = demo["finger_max"] < finger_threshold
+            signal = demo["state_finger_max"] < finger_threshold
             if not bool(signal[0]) and bool(signal.any()):
                 idx = int(np.where(signal)[0][0])
                 crossings.append(idx)
@@ -120,7 +125,7 @@ def main() -> int:
             f"dist_at_cross={min(dists) if dists else float('nan'):.4f}..{max(dists) if dists else float('nan'):.4f}"
         )
 
-    print("\nTransition count by finger + distance thresholds:")
+    print("\nTransition count by replay-state finger + distance thresholds:")
     header = "finger".ljust(12) + " ".join(f"dist<{threshold:.2f}".rjust(10) for threshold in args.distance_thresholds)
     print(header)
     for finger_threshold in args.finger_thresholds:
@@ -128,19 +133,19 @@ def main() -> int:
         for distance_threshold in args.distance_thresholds:
             count = 0
             for demo in demos:
-                signal = (demo["finger_max"] < finger_threshold) & (demo["rel_dist"] < distance_threshold)
+                signal = (demo["state_finger_max"] < finger_threshold) & (demo["rel_dist"] < distance_threshold)
                 if not bool(signal[0]) and bool(signal.any()):
                     count += 1
             counts.append(count)
         print(f"{finger_threshold: .3f}".ljust(12) + " ".join(f"{count}/{len(demos)}".rjust(10) for count in counts))
 
     print("\nRecommended default for this dataset:")
-    print("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD=-0.01")
+    print("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD=0.025")
     print("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD=0.12")
     print(
-        "Reason: all demos start with grasp=false, later cross finger<-0.01, "
-        "and the max distance at that crossing is about 0.09m; 0.12m leaves "
-        "replay margin while still requiring gripper closure."
+        "Reason: IsaacLab replay uses states/articulation/robot/joint_position, "
+        "where the Panda fingers start near 0.04 and close below 0.025 in all demos. "
+        "The max distance at that crossing is about 0.09m; 0.12m leaves replay margin."
     )
     print(
         "Note: open-drawer MimicGen defaults to OPEN_DRAWER_MIMIC_GRASP_MODE=joint. "
