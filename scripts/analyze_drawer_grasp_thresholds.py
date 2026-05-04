@@ -134,12 +134,17 @@ def main() -> int:
             counts.append(count)
         print(f"{finger_threshold: .3f}".ljust(12) + " ".join(f"{count}/{len(demos)}".rjust(10) for count in counts))
 
-    print("\nRecommended default for this dataset:")
+    print("\nJoint-detector fallback for this dataset:")
     print("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD=-0.01")
     print("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD=0.10")
     print(
         "Reason: all demos start with grasp=false, later cross finger<-0.01, "
         "and the max distance at that crossing is below 0.10m."
+    )
+    print(
+        "Note: open-drawer MimicGen now defaults to OPEN_DRAWER_MIMIC_GRASP_MODE=geometry. "
+        "This script validates the joint-distance fallback because raw HDF5 files do not "
+        "store fingertip world positions directly."
     )
     return 0
 

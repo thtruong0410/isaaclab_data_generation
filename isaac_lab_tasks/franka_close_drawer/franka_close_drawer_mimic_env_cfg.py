@@ -46,8 +46,12 @@ def close_handle_is_grasped(
     env,
     dist_threshold: float | None = None,
     gripper_threshold: float | None = None,
+    fingertip_dist_threshold: float | None = None,
+    fingertip_gap_threshold: float | None = None,
+    require_both_fingertips: bool | None = None,
     align_threshold: float | None = None,
     require_wrap_alignment: bool | None = None,
+    grasp_mode: str | None = None,
     robot_name: str = "robot",
     ee_frame_name: str = "ee_frame",
     cabinet_frame_name: str = "cabinet_frame",
@@ -66,12 +70,36 @@ def close_handle_is_grasped(
             "yes",
             "on",
         }
+    if fingertip_dist_threshold is None:
+        fingertip_dist_threshold = _get_close_drawer_env_float(
+            "CLOSE_DRAWER_MIMIC_FINGERTIP_DIST_THRESHOLD",
+            "OPEN_DRAWER_MIMIC_FINGERTIP_DIST_THRESHOLD",
+            0.08,
+        )
+    if fingertip_gap_threshold is None:
+        fingertip_gap_threshold = _get_close_drawer_env_float(
+            "CLOSE_DRAWER_MIMIC_FINGERTIP_GAP_THRESHOLD",
+            "OPEN_DRAWER_MIMIC_FINGERTIP_GAP_THRESHOLD",
+            0.07,
+        )
+    if require_both_fingertips is None:
+        require_both_fingertips = _get_close_drawer_env_bool(
+            "CLOSE_DRAWER_MIMIC_REQUIRE_BOTH_FINGERTIPS",
+            "OPEN_DRAWER_MIMIC_REQUIRE_BOTH_FINGERTIPS",
+            False,
+        )
+    if grasp_mode is None:
+        grasp_mode = os.getenv("CLOSE_DRAWER_MIMIC_GRASP_MODE", "joint")
     return open_drawer_handle_is_grasped(
         env,
         dist_threshold=dist_threshold,
         gripper_threshold=gripper_threshold,
+        fingertip_dist_threshold=fingertip_dist_threshold,
+        fingertip_gap_threshold=fingertip_gap_threshold,
+        require_both_fingertips=require_both_fingertips,
         align_threshold=align_threshold,
         require_wrap_alignment=require_wrap_alignment,
+        grasp_mode=grasp_mode,
         robot_name=robot_name,
         ee_frame_name=ee_frame_name,
         cabinet_frame_name=cabinet_frame_name,

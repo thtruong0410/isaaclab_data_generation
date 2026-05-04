@@ -35,6 +35,13 @@ def _get_env_int(name: str, default: int) -> int:
     return default if value is None else int(value)
 
 
+def _get_env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _selected_handle_pose(env: ManagerBasedRLEnv, cabinet_name: str = "cabinet") -> tuple[torch.Tensor, torch.Tensor]:
     cabinet: Articulation = env.scene[cabinet_name]
     target = os.getenv("OPEN_DRAWER_TARGET_DRAWER", "both")
@@ -85,35 +92,47 @@ def handle_is_grasped(
     env: ManagerBasedRLEnv,
     dist_threshold: float | None = None,
     gripper_threshold: float | None = None,
+    fingertip_dist_threshold: float | None = None,
+    fingertip_gap_threshold: float | None = None,
+    require_both_fingertips: bool | None = None,
     align_threshold: float | None = None,
     require_wrap_alignment: bool | None = None,
+    grasp_mode: str | None = None,
     robot_name: str = "robot",
     ee_frame_name: str = "ee_frame",
     cabinet_frame_name: str = "cabinet_frame",
 ) -> torch.Tensor:
     """Return True when the gripper is plausibly engaged with the drawer handle.
 
-    The stock Panda hand often opens the Isaac Lab drawer with a partial hook/contact
-    rather than a perfect wrap. We therefore accept either the strict wrap check or a
-    softer pose-alignment score, together with proximity and partial gripper closure.
+    Drawer demos can hook or pull the handle with varied finger joint values, so
+    the default detector uses fingertip geometry instead of only a joint threshold.
+    Set ``OPEN_DRAWER_MIMIC_GRASP_MODE=joint`` to recover the older joint-only
+    detector, or ``either``/``both`` to combine both detectors.
     """
     if dist_threshold is None:
         dist_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD", 0.10)
     if gripper_threshold is None:
         gripper_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD", -0.01)
+    if fingertip_dist_threshold is None:
+        fingertip_dist_threshold = _get_env_float("OPEN_DRAWER_MIMIC_FINGERTIP_DIST_THRESHOLD", 0.08)
+    if fingertip_gap_threshold is None:
+        fingertip_gap_threshold = _get_env_float("OPEN_DRAWER_MIMIC_FINGERTIP_GAP_THRESHOLD", 0.07)
+    if require_both_fingertips is None:
+        require_both_fingertips = _get_env_bool("OPEN_DRAWER_MIMIC_REQUIRE_BOTH_FINGERTIPS", False)
     if align_threshold is None:
         align_threshold = _get_env_float("OPEN_DRAWER_MIMIC_ALIGN_THRESHOLD", -1.0)
     if require_wrap_alignment is None:
-        require_wrap_alignment = os.getenv("OPEN_DRAWER_MIMIC_REQUIRE_WRAP_ALIGNMENT", "0").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-            "on",
-        }
+        require_wrap_alignment = _get_env_bool("OPEN_DRAWER_MIMIC_REQUIRE_WRAP_ALIGNMENT", False)
+    if grasp_mode is None:
+        grasp_mode = os.getenv("OPEN_DRAWER_MIMIC_GRASP_MODE", "geometry")
+    grasp_mode = grasp_mode.strip().lower()
 
     robot: Articulation = env.scene[robot_name]
     ee_pos = env.scene[ee_frame_name].data.target_pos_w[:, 0, :]
     ee_quat = env.scene[ee_frame_name].data.target_quat_w[:, 0, :]
+    ee_fingertips_w = env.scene[ee_frame_name].data.target_pos_w[:, 1:, :]
+    lfinger_pos = ee_fingertips_w[:, 0, :]
+    rfinger_pos = ee_fingertips_w[:, 1, :]
     handle_pos_all, handle_quat_all = _selected_handle_pose(env)
     handle_pos, handle_quat, dist = _nearest_handle_pose(ee_pos, handle_pos_all, handle_quat_all)
 
@@ -121,18 +140,40 @@ def handle_is_grasped(
 
     finger_ids, _ = robot.find_joints(["panda_finger_joint1", "panda_finger_joint2"])
     finger_pos = robot.data.joint_pos[:, finger_ids]
-    gripper_closed = finger_pos.max(dim=1).values < gripper_threshold
+    joint_closed = finger_pos.max(dim=1).values < gripper_threshold
+
+    lfinger_handle_dist = torch.linalg.vector_norm(lfinger_pos - handle_pos, dim=1)
+    rfinger_handle_dist = torch.linalg.vector_norm(rfinger_pos - handle_pos, dim=1)
+    if require_both_fingertips:
+        fingertips_close = (lfinger_handle_dist < fingertip_dist_threshold) & (
+            rfinger_handle_dist < fingertip_dist_threshold
+        )
+    else:
+        fingertips_close = torch.minimum(lfinger_handle_dist, rfinger_handle_dist) < fingertip_dist_threshold
+    fingertip_gap = torch.linalg.vector_norm(lfinger_pos - rfinger_pos, dim=1)
+    geometry_closed = fingertips_close & (fingertip_gap < fingertip_gap_threshold)
+
+    if grasp_mode in {"geometry", "fingertip", "fingertips"}:
+        handle_engaged = geometry_closed
+    elif grasp_mode in {"joint", "gripper"}:
+        handle_engaged = joint_closed
+    elif grasp_mode in {"either", "or", "hybrid"}:
+        handle_engaged = geometry_closed | joint_closed
+    elif grasp_mode in {"both", "and"}:
+        handle_engaged = geometry_closed & joint_closed
+    else:
+        raise ValueError(
+            "OPEN_DRAWER_MIMIC_GRASP_MODE must be one of: geometry, joint, either, both. "
+            f"Got: {grasp_mode!r}"
+        )
 
     if align_threshold <= -1.0 and not require_wrap_alignment:
         aligned = torch.ones_like(close_enough, dtype=torch.bool)
     else:
-        ee_fingertips_w = env.scene[ee_frame_name].data.target_pos_w[:, 1:, :]
-        lfinger_pos = ee_fingertips_w[:, 0, :]
-        rfinger_pos = ee_fingertips_w[:, 1, :]
         wrap_aligned = (rfinger_pos[:, 2] < handle_pos[:, 2]) & (lfinger_pos[:, 2] > handle_pos[:, 2])
         pose_aligned = _align_ee_to_handle(ee_quat, handle_quat) > align_threshold
         aligned = wrap_aligned if require_wrap_alignment else (wrap_aligned | pose_aligned)
-    return (close_enough & gripper_closed & aligned).unsqueeze(-1).float()
+    return (close_enough & handle_engaged & aligned).unsqueeze(-1).float()
 
 
 @configclass
