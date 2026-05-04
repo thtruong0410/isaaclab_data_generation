@@ -70,6 +70,9 @@ def _debug_handle_grasp(
     lfinger_handle_dist: torch.Tensor,
     rfinger_handle_dist: torch.Tensor,
     fingertip_gap: torch.Tensor,
+    pose_align_score: torch.Tensor,
+    wrap_aligned: torch.Tensor,
+    pose_aligned: torch.Tensor,
     close_enough: torch.Tensor,
     joint_closed: torch.Tensor,
     geometry_closed: torch.Tensor,
@@ -105,8 +108,10 @@ def _debug_handle_grasp(
         f"both_ft={int(require_both_fingertips)}) "
         f"counts(close={_bool_count(close_enough)}, joint={_bool_count(joint_closed)}, "
         f"geom={_bool_count(geometry_closed)}, engaged={_bool_count(handle_engaged)}, "
+        f"wrap={_bool_count(wrap_aligned)}, pose={_bool_count(pose_aligned)}, "
         f"aligned={_bool_count(aligned)}, grasp={_bool_count(grasp_signal)}) "
         f"dist={_tensor_range(dist)} finger_max={_tensor_range(finger_max)} "
+        f"align_score={_tensor_range(pose_align_score)} "
         f"lfinger_dist={_tensor_range(lfinger_handle_dist)} "
         f"rfinger_dist={_tensor_range(rfinger_handle_dist)} "
         f"finger_gap={_tensor_range(fingertip_gap)}",
@@ -240,11 +245,12 @@ def handle_is_grasped(
             f"Got: {grasp_mode!r}"
         )
 
+    wrap_aligned = (rfinger_pos[:, 2] < handle_pos[:, 2]) & (lfinger_pos[:, 2] > handle_pos[:, 2])
+    pose_align_score = _align_ee_to_handle(ee_quat, handle_quat)
+    pose_aligned = pose_align_score > align_threshold
     if align_threshold <= -1.0 and not require_wrap_alignment:
         aligned = torch.ones_like(close_enough, dtype=torch.bool)
     else:
-        wrap_aligned = (rfinger_pos[:, 2] < handle_pos[:, 2]) & (lfinger_pos[:, 2] > handle_pos[:, 2])
-        pose_aligned = _align_ee_to_handle(ee_quat, handle_quat) > align_threshold
         aligned = wrap_aligned if require_wrap_alignment else (wrap_aligned | pose_aligned)
     grasp_signal = close_enough & handle_engaged & aligned
     _debug_handle_grasp(
@@ -262,6 +268,9 @@ def handle_is_grasped(
         lfinger_handle_dist=lfinger_handle_dist,
         rfinger_handle_dist=rfinger_handle_dist,
         fingertip_gap=fingertip_gap,
+        pose_align_score=pose_align_score,
+        wrap_aligned=wrap_aligned,
+        pose_aligned=pose_aligned,
         close_enough=close_enough,
         joint_closed=joint_closed,
         geometry_closed=geometry_closed,
