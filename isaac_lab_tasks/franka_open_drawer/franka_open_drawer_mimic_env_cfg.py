@@ -42,6 +42,78 @@ def _get_env_bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _tensor_range(value: torch.Tensor) -> str:
+    value = value.detach().flatten()
+    if value.numel() == 0:
+        return "empty"
+    return f"{float(value.min().item()):.4f}..{float(value.max().item()):.4f}"
+
+
+def _bool_count(value: torch.Tensor) -> str:
+    value = value.detach().flatten().bool()
+    return f"{int(value.sum().item())}/{value.numel()}"
+
+
+def _debug_handle_grasp(
+    env: ManagerBasedRLEnv,
+    *,
+    grasp_mode: str,
+    dist_threshold: float,
+    gripper_threshold: float,
+    fingertip_dist_threshold: float,
+    fingertip_gap_threshold: float,
+    align_threshold: float,
+    require_wrap_alignment: bool,
+    require_both_fingertips: bool,
+    dist: torch.Tensor,
+    finger_max: torch.Tensor,
+    lfinger_handle_dist: torch.Tensor,
+    rfinger_handle_dist: torch.Tensor,
+    fingertip_gap: torch.Tensor,
+    close_enough: torch.Tensor,
+    joint_closed: torch.Tensor,
+    geometry_closed: torch.Tensor,
+    handle_engaged: torch.Tensor,
+    aligned: torch.Tensor,
+    grasp_signal: torch.Tensor,
+) -> None:
+    if not _get_env_bool("OPEN_DRAWER_MIMIC_DEBUG", False):
+        return
+
+    count = int(getattr(env, "_open_drawer_mimic_debug_count", 0)) + 1
+    setattr(env, "_open_drawer_mimic_debug_count", count)
+
+    first_n = _get_env_int("OPEN_DRAWER_MIMIC_DEBUG_FIRST_N", 5)
+    interval = max(_get_env_int("OPEN_DRAWER_MIMIC_DEBUG_INTERVAL", 25), 1)
+    grasp_seen = bool(getattr(env, "_open_drawer_mimic_debug_seen_grasp", False))
+    has_grasp = bool(grasp_signal.detach().bool().any().item())
+    if has_grasp:
+        setattr(env, "_open_drawer_mimic_debug_seen_grasp", True)
+
+    should_print = count <= first_n or count % interval == 0 or (has_grasp and not grasp_seen)
+    if not should_print:
+        return
+
+    sim_step = getattr(env, "common_step_counter", "NA")
+    target = os.getenv("OPEN_DRAWER_TARGET_DRAWER", "both")
+    print(
+        "[open_drawer_mimic][grasp_debug] "
+        f"call={count} sim_step={sim_step} target={target} mode={grasp_mode} "
+        f"thr(dist={dist_threshold:.3f}, grip={gripper_threshold:.3f}, "
+        f"ft_dist={fingertip_dist_threshold:.3f}, ft_gap={fingertip_gap_threshold:.3f}, "
+        f"align={align_threshold:.3f}, wrap={int(require_wrap_alignment)}, "
+        f"both_ft={int(require_both_fingertips)}) "
+        f"counts(close={_bool_count(close_enough)}, joint={_bool_count(joint_closed)}, "
+        f"geom={_bool_count(geometry_closed)}, engaged={_bool_count(handle_engaged)}, "
+        f"aligned={_bool_count(aligned)}, grasp={_bool_count(grasp_signal)}) "
+        f"dist={_tensor_range(dist)} finger_max={_tensor_range(finger_max)} "
+        f"lfinger_dist={_tensor_range(lfinger_handle_dist)} "
+        f"rfinger_dist={_tensor_range(rfinger_handle_dist)} "
+        f"finger_gap={_tensor_range(fingertip_gap)}",
+        flush=True,
+    )
+
+
 def _selected_handle_pose(env: ManagerBasedRLEnv, cabinet_name: str = "cabinet") -> tuple[torch.Tensor, torch.Tensor]:
     cabinet: Articulation = env.scene[cabinet_name]
     target = os.getenv("OPEN_DRAWER_TARGET_DRAWER", "both")
@@ -140,7 +212,8 @@ def handle_is_grasped(
 
     finger_ids, _ = robot.find_joints(["panda_finger_joint1", "panda_finger_joint2"])
     finger_pos = robot.data.joint_pos[:, finger_ids]
-    joint_closed = finger_pos.max(dim=1).values < gripper_threshold
+    finger_max = finger_pos.max(dim=1).values
+    joint_closed = finger_max < gripper_threshold
 
     lfinger_handle_dist = torch.linalg.vector_norm(lfinger_pos - handle_pos, dim=1)
     rfinger_handle_dist = torch.linalg.vector_norm(rfinger_pos - handle_pos, dim=1)
@@ -173,7 +246,30 @@ def handle_is_grasped(
         wrap_aligned = (rfinger_pos[:, 2] < handle_pos[:, 2]) & (lfinger_pos[:, 2] > handle_pos[:, 2])
         pose_aligned = _align_ee_to_handle(ee_quat, handle_quat) > align_threshold
         aligned = wrap_aligned if require_wrap_alignment else (wrap_aligned | pose_aligned)
-    return (close_enough & handle_engaged & aligned).unsqueeze(-1).float()
+    grasp_signal = close_enough & handle_engaged & aligned
+    _debug_handle_grasp(
+        env,
+        grasp_mode=grasp_mode,
+        dist_threshold=dist_threshold,
+        gripper_threshold=gripper_threshold,
+        fingertip_dist_threshold=fingertip_dist_threshold,
+        fingertip_gap_threshold=fingertip_gap_threshold,
+        align_threshold=align_threshold,
+        require_wrap_alignment=require_wrap_alignment,
+        require_both_fingertips=require_both_fingertips,
+        dist=dist,
+        finger_max=finger_max,
+        lfinger_handle_dist=lfinger_handle_dist,
+        rfinger_handle_dist=rfinger_handle_dist,
+        fingertip_gap=fingertip_gap,
+        close_enough=close_enough,
+        joint_closed=joint_closed,
+        geometry_closed=geometry_closed,
+        handle_engaged=handle_engaged,
+        aligned=aligned,
+        grasp_signal=grasp_signal,
+    )
+    return grasp_signal.unsqueeze(-1).float()
 
 
 @configclass

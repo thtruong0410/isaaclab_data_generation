@@ -178,6 +178,22 @@ Avoid setting `OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD` to a positive value when
 using `joint`, because that can make the `grasp` signal true from the first
 frame and MimicGen cannot find a subtask transition.
 
+To debug why annotation does or does not detect `grasp`, enable replay logs:
+
+```bash
+OPEN_DRAWER_MIMIC_DEBUG=1 \
+OPEN_DRAWER_MIMIC_DEBUG_INTERVAL=10 \
+BUDGETS="10" \
+HEADLESS=1 NUM_ENVS=1 OVERWRITE=1 \
+bash scripts/mimic_budget_comparison.sh open_drawer_sphere
+```
+
+Each debug line prints the active detector mode, thresholds, counts for every
+condition, and the replay-time ranges for `dist`, `finger_max`, fingertip
+distances, and fingertip gap. If `close=0/1`, the EE is too far from the
+selected handle. If `joint=0/1`, the gripper did not cross the close threshold.
+If `grasp=1/1` never appears, the detector never found a subtask transition.
+
 You can re-check the default joint-distance thresholds on any raw drawer folder:
 
 ```bash
