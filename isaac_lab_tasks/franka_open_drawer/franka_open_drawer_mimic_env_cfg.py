@@ -104,10 +104,10 @@ def handle_is_grasped(
 ) -> torch.Tensor:
     """Return True when the gripper is plausibly engaged with the drawer handle.
 
-    Drawer demos can hook or pull the handle with varied finger joint values, so
-    the default detector uses fingertip geometry instead of only a joint threshold.
-    Set ``OPEN_DRAWER_MIMIC_GRASP_MODE=joint`` to recover the older joint-only
-    detector, or ``either``/``both`` to combine both detectors.
+    The default detector mirrors the pick-cup grasp detector: the gripper must be
+    near the handle and the fingers must be closed enough. Set
+    ``OPEN_DRAWER_MIMIC_GRASP_MODE=geometry`` to try fingertip geometry instead,
+    or ``either``/``both`` to combine both detectors.
     """
     if dist_threshold is None:
         dist_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD", 0.10)
@@ -124,7 +124,7 @@ def handle_is_grasped(
     if require_wrap_alignment is None:
         require_wrap_alignment = _get_env_bool("OPEN_DRAWER_MIMIC_REQUIRE_WRAP_ALIGNMENT", False)
     if grasp_mode is None:
-        grasp_mode = os.getenv("OPEN_DRAWER_MIMIC_GRASP_MODE", "geometry")
+        grasp_mode = os.getenv("OPEN_DRAWER_MIMIC_GRASP_MODE", "joint")
     grasp_mode = grasp_mode.strip().lower()
 
     robot: Articulation = env.scene[robot_name]

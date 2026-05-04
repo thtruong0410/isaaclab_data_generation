@@ -146,19 +146,20 @@ To select a specific IsaacLab CUDA device, prefer `ISAAC_DEVICE` instead of
 ISAAC_DEVICE=cuda:1 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh open_drawer_sphere
 ```
 
-For open-drawer MimicGen, the default grasp detector now uses fingertip geometry
-instead of only the Panda finger joint value:
+For open-drawer MimicGen, the default grasp detector mirrors the pick-cup
+detector: the gripper must be near the selected handle and the fingers must be
+closed enough.
+
+```text
+OPEN_DRAWER_MIMIC_GRASP_MODE=joint
+OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD=0.10
+OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD=-0.01
+```
+
+The optional fingertip geometry detector is still available for experiments:
 
 ```text
 OPEN_DRAWER_MIMIC_GRASP_MODE=geometry
-```
-
-The `grasp` signal becomes true when the EE is near the selected handle, at
-least one fingertip is near the handle, and the two fingertips are close enough
-to each other:
-
-```text
-OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD=0.10
 OPEN_DRAWER_MIMIC_FINGERTIP_DIST_THRESHOLD=0.08
 OPEN_DRAWER_MIMIC_FINGERTIP_GAP_THRESHOLD=0.07
 OPEN_DRAWER_MIMIC_REQUIRE_BOTH_FINGERTIPS=0
@@ -167,18 +168,17 @@ OPEN_DRAWER_MIMIC_REQUIRE_BOTH_FINGERTIPS=0
 You can switch detector modes without changing the raw data:
 
 ```text
-OPEN_DRAWER_MIMIC_GRASP_MODE=geometry  # default: fingertip geometry
-OPEN_DRAWER_MIMIC_GRASP_MODE=joint     # old detector: finger joint < -0.01
+OPEN_DRAWER_MIMIC_GRASP_MODE=joint     # default: EE near handle + finger joint < -0.01
+OPEN_DRAWER_MIMIC_GRASP_MODE=geometry  # fingertip geometry
 OPEN_DRAWER_MIMIC_GRASP_MODE=either    # geometry OR joint
 OPEN_DRAWER_MIMIC_GRASP_MODE=both      # geometry AND joint
 ```
 
 Avoid setting `OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD` to a positive value when
-using `joint` or `either`, because that can make the `grasp` signal true from
-the first frame and MimicGen cannot find a subtask transition.
+using `joint`, because that can make the `grasp` signal true from the first
+frame and MimicGen cannot find a subtask transition.
 
-You can re-check the old joint-distance fallback thresholds on any raw drawer
-folder:
+You can re-check the default joint-distance thresholds on any raw drawer folder:
 
 ```bash
 python scripts/analyze_drawer_grasp_thresholds.py data/source/open_drawer_sphere_top_bottom
@@ -186,11 +186,9 @@ python scripts/analyze_drawer_grasp_thresholds.py data/source/open_drawer_sphere
 
 A good detector must produce `grasp=false` at the first frame, then a later
 `false -> true` transition for every source demo. For the current 50-demo
-top/bottom set, the old joint fallback `finger < -0.01` gives 50/50 transitions
-and the largest EE distance at that first crossing is about `0.0896m`, so the
-`0.10m` distance threshold leaves margin. The fingertip geometry detector is
-evaluated during IsaacLab replay because raw HDF5 files do not store fingertip
-world positions directly.
+top/bottom set, `finger < -0.01` gives 50/50 transitions and the largest EE
+distance at that first crossing is about `0.0896m`, so the `0.10m` distance
+threshold leaves margin.
 
 This creates:
 
