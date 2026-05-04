@@ -152,7 +152,7 @@ closed enough.
 
 ```text
 OPEN_DRAWER_MIMIC_GRASP_MODE=joint
-OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD=0.10
+OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD=0.12
 OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD=-0.01
 ```
 
@@ -187,8 +187,9 @@ python scripts/analyze_drawer_grasp_thresholds.py data/source/open_drawer_sphere
 A good detector must produce `grasp=false` at the first frame, then a later
 `false -> true` transition for every source demo. For the current 50-demo
 top/bottom set, `finger < -0.01` gives 50/50 transitions and the largest EE
-distance at that first crossing is about `0.0896m`, so the `0.10m` distance
-threshold leaves margin.
+distance at that first crossing is about `0.0896m`. The `0.12m` distance
+threshold leaves about `3cm` of margin for replay/handle-frame differences while
+still requiring the gripper-close transition.
 
 This creates:
 

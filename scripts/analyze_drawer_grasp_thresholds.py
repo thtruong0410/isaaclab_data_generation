@@ -136,10 +136,11 @@ def main() -> int:
 
     print("\nRecommended default for this dataset:")
     print("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD=-0.01")
-    print("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD=0.10")
+    print("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD=0.12")
     print(
         "Reason: all demos start with grasp=false, later cross finger<-0.01, "
-        "and the max distance at that crossing is below 0.10m."
+        "and the max distance at that crossing is about 0.09m; 0.12m leaves "
+        "replay margin while still requiring gripper closure."
     )
     print(
         "Note: open-drawer MimicGen defaults to OPEN_DRAWER_MIMIC_GRASP_MODE=joint. "

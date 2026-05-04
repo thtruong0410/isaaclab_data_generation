@@ -110,7 +110,7 @@ def handle_is_grasped(
     or ``either``/``both`` to combine both detectors.
     """
     if dist_threshold is None:
-        dist_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD", 0.10)
+        dist_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRASP_DIST_THRESHOLD", 0.12)
     if gripper_threshold is None:
         gripper_threshold = _get_env_float("OPEN_DRAWER_MIMIC_GRIPPER_THRESHOLD", -0.01)
     if fingertip_dist_threshold is None:
