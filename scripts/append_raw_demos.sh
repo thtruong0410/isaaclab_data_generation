@@ -107,6 +107,19 @@ copy_one() {
     esac
 }
 
+remove_manifest_row() {
+    local output_name="$1"
+    local tmp_file
+
+    if [ ! -f "$MANIFEST" ]; then
+        return
+    fi
+
+    tmp_file="${MANIFEST}.tmp.$$"
+    awk -v output_name="$output_name" 'NR == 1 || $1 != output_name { print }' "$MANIFEST" > "$tmp_file"
+    mv "$tmp_file" "$MANIFEST"
+}
+
 START_INDEX="${START_INDEX:-$(next_index)}"
 MANIFEST="$DEST_DIR/append_manifest.tsv"
 
@@ -142,6 +155,9 @@ for src in "${SOURCE_FILES[@]}"; do
             exit 1
         fi
         copy_one "$src" "$out_file"
+        if [ "$OVERWRITE" = "1" ]; then
+            remove_manifest_row "$(basename "$out_file")"
+        fi
         printf '%s\t%s\n' "$(basename "$out_file")" "$src" >> "$MANIFEST"
     fi
 
