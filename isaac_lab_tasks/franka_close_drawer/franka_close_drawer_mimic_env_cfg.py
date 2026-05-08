@@ -62,7 +62,7 @@ def close_handle_is_grasped(
     if gripper_threshold is None:
         gripper_threshold = _get_env_float("CLOSE_DRAWER_MIMIC_GRIPPER_THRESHOLD", 0.06)
     if align_threshold is None:
-        align_threshold = _get_env_float("CLOSE_DRAWER_MIMIC_ALIGN_THRESHOLD", 0.15)
+        align_threshold = _get_env_float("CLOSE_DRAWER_MIMIC_ALIGN_THRESHOLD", -1.0)
     if require_wrap_alignment is None:
         require_wrap_alignment = os.getenv("CLOSE_DRAWER_MIMIC_REQUIRE_WRAP_ALIGNMENT", "0").strip().lower() in {
             "1",
