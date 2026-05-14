@@ -37,6 +37,10 @@ if TYPE_CHECKING:
 
 CUP_INIT_POS = (0.50, 0.0, 0.055)
 BOX_INIT_POS = (0.82, 0.22, 0.0203)
+CUP_X_RANGE = (0.46, 0.54)
+CUP_Y_RANGE = (-0.08, 0.08)
+CUP_YAW_RANGE = (-0.50, 0.50)
+ARM_JOINT_RESET_STD = 0.02
 
 
 def cup_is_placed_in_box_and_released(
@@ -100,15 +104,25 @@ def cup_is_grasped(
 class EventCfg:
     reset_all = EventTerm(func=lift_mdp.reset_scene_to_default, mode="reset")
 
+    randomize_franka_joint_state = EventTerm(
+        func=franka_stack_events.randomize_joint_by_gaussian_offset,
+        mode="reset",
+        params={
+            "mean": 0.0,
+            "std": ARM_JOINT_RESET_STD,
+            "asset_cfg": SceneEntityCfg("robot"),
+        },
+    )
+
     reset_cup_pose = EventTerm(
         func=franka_stack_events.randomize_object_pose,
         mode="reset",
         params={
             "pose_range": {
-                "x": (CUP_INIT_POS[0], CUP_INIT_POS[0]),
-                "y": (CUP_INIT_POS[1], CUP_INIT_POS[1]),
+                "x": CUP_X_RANGE,
+                "y": CUP_Y_RANGE,
                 "z": (CUP_INIT_POS[2], CUP_INIT_POS[2]),
-                "yaw": (0.0, 0.0),
+                "yaw": CUP_YAW_RANGE,
             },
             "min_separation": 0.0,
             "asset_cfgs": [SceneEntityCfg("object")],
