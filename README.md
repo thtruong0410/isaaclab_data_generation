@@ -32,7 +32,7 @@ close_door_sphere
 close_drawer_normal
 close_drawer_sphere
 franka_bin_stack_normal  # native IsaacLab Franka cube-bin task
-franka_place_cup_in_box_normal  # Franka place-only cup into box task
+franka_place_cup_in_box_normal  # Franka grasp cup from table, then place into box
 ```
 
 ## Environment
@@ -242,10 +242,10 @@ ready-to-run upstream task for the current data-generation pipeline because it
 uses Franka, relative IK actions, a bin/container, object placement, and an
 IsaacLab Mimic config.
 
-There is no exact upstream `Franka PlaceCupInBox` task where the cup starts
-already grasped on the gripper. If we need that exact task, adapt it from the
-Franka bin-stack scene/control setup and change the object/reset/success logic
-to one cup and one configurable box.
+There is no exact upstream `Franka PlaceCupInBox` task where a cup starts on
+the table and must be grasped top-down before placing into a box. The local
+task below adapts the Franka bin-stack scene/control setup and changes the
+object/reset/success logic to one cup and one configurable box.
 
 ```bash
 cd /home/ntruong/Truong/isaaclab_data_generation
@@ -255,14 +255,14 @@ HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh franka_bin_stack_normal 100
 
 ## Franka place cup in box
 
-`franka_place_cup_in_box_normal` is the place-only task requested for cup/box
+`franka_place_cup_in_box_normal` is the cup-to-box task requested for cup/box
 data. It adapts IsaacLab's Franka bin-stack scene/control pieces, but replaces
 the stack objects with one cup and one configurable box. On reset, the Franka
-starts from a fixed pose, the gripper is closed, and the cup is placed at the
-gripper so collection starts after grasping.
+starts from a fixed pose with the gripper open, the cup starts on the table,
+and the box is fixed in front of the robot.
 
-The intended demo is: move the already-held cup above the box, lower it, open
-the gripper, and retreat.
+The intended demo is: move above the cup, grasp it from the top, lift it, move
+above the box, lower it, open the gripper, and retreat.
 
 ```bash
 cd /home/ntruong/Truong/isaaclab_data_generation

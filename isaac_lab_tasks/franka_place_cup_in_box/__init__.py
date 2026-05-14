@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-"""Register the Franka place-cup-in-box data-generation task."""
+"""Register the Franka grasp-cup-then-place-in-box data-generation task."""
 
 import gymnasium as gym
 

@@ -27,8 +27,8 @@ FRANKA_PLACE_CUP_IN_BOX_NORMAL_SPEC = TaskSuiteSpec(
         report_success_at=(300, 600),
     ),
     notes=(
-        "Franka place-only task adapted from IsaacLab Franka bin-stack components.",
-        "The cup starts at the gripper with the gripper closed; the demo should move to the box, open, and retreat.",
+        "Franka cup-to-box task adapted from IsaacLab Franka bin-stack components.",
+        "The cup starts on the table; the demo should grasp top-down, move to the box, open, and retreat.",
     ),
 )
 

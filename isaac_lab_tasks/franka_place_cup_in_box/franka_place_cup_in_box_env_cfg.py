@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-"""Franka place-only task: start with a cup at the gripper and place it into a box."""
+"""Franka cup-to-box task: grasp a cup from the table and place it into a box."""
 
 from __future__ import annotations
 
@@ -26,21 +26,19 @@ from isaaclab_tasks.manager_based.manipulation.stack import mdp as stack_mdp
 from isaaclab_tasks.manager_based.manipulation.stack.mdp import franka_stack_events
 from isaaclab_tasks.manager_based.manipulation.stack.stack_env_cfg import StackEnvCfg
 
-from . import franka_place_cup_in_box_events
-
 from isaaclab.markers.config import FRAME_MARKER_CFG  # isort: skip
 
 
 @configclass
 class EventCfg:
-    """Reset events for a place-only cup task."""
+    """Reset events for grasping a table cup and placing it into a box."""
 
     init_franka_arm_pose = EventTerm(
         func=franka_stack_events.set_default_joint_pose,
         mode="reset",
         params={
-            # Same arm seed as the upstream Franka bin-stack task, but with the gripper closed.
-            "default_pose": [0.0444, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0, 0.0],
+            # Same arm seed as the upstream Franka bin-stack task, with gripper open for top-down grasping.
+            "default_pose": [0.0444, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.04, 0.04],
         },
     )
 
@@ -54,21 +52,19 @@ class EventCfg:
         func=franka_stack_events.randomize_object_pose,
         mode="reset",
         params={
-            "pose_range": {"x": (0.45, 0.45), "y": (0.0, 0.0), "z": (0.0203, 0.0203), "yaw": (0.0, 0.0)},
+            "pose_range": {"x": (0.40, 0.40), "y": (0.0, 0.0), "z": (0.0203, 0.0203), "yaw": (0.0, 0.0)},
             "min_separation": 0.0,
             "asset_cfgs": [SceneEntityCfg("box")],
         },
     )
 
-    reset_cup_to_gripper = EventTerm(
-        func=franka_place_cup_in_box_events.reset_object_to_gripper,
+    reset_cup_pose = EventTerm(
+        func=franka_stack_events.randomize_object_pose,
         mode="reset",
         params={
-            "object_cfg": SceneEntityCfg("cup"),
-            "robot_cfg": SceneEntityCfg("robot"),
-            "hand_body_name": "panda_hand",
-            "relative_pos": (0.0, 0.0, 0.105),
-            "relative_rot": (1.0, 0.0, 0.0, 0.0),
+            "pose_range": {"x": (0.65, 0.65), "y": (-0.18, -0.18), "z": (0.055, 0.055), "yaw": (0.0, 0.0)},
+            "min_separation": 0.0,
+            "asset_cfgs": [SceneEntityCfg("cup")],
         },
     )
 
@@ -191,7 +187,7 @@ class FrankaPlaceCupInBoxEnvCfg(StackEnvCfg):
 
         self.scene.cup = RigidObjectCfg(
             prim_path="{ENV_REGEX_NS}/Cup",
-            init_state=RigidObjectCfg.InitialStateCfg(pos=(0.45, 0.0, 0.12), rot=(1.0, 0.0, 0.0, 0.0)),
+            init_state=RigidObjectCfg.InitialStateCfg(pos=(0.65, -0.18, 0.055), rot=(1.0, 0.0, 0.0, 0.0)),
             spawn=UsdFileCfg(
                 usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Objects/Mug/mug.usd",
                 rigid_props=cup_properties,
@@ -201,7 +197,7 @@ class FrankaPlaceCupInBoxEnvCfg(StackEnvCfg):
 
         self.scene.box = RigidObjectCfg(
             prim_path="{ENV_REGEX_NS}/Box",
-            init_state=RigidObjectCfg.InitialStateCfg(pos=(0.45, 0.0, 0.0203), rot=(1.0, 0.0, 0.0, 0.0)),
+            init_state=RigidObjectCfg.InitialStateCfg(pos=(0.40, 0.0, 0.0203), rot=(1.0, 0.0, 0.0, 0.0)),
             spawn=UsdFileCfg(
                 usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/sorting_bin_blue.usd",
                 scale=(1.1, 1.6, 3.3),

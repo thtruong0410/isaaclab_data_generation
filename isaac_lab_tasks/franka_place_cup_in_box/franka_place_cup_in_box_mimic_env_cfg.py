@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-"""MimicGen config for the Franka place-cup-in-box task."""
+"""MimicGen config for the Franka grasp-cup-then-place-in-box task."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from .franka_place_cup_in_box_env_cfg import FrankaPlaceCupInBoxEnvCfg
 
 @configclass
 class FrankaPlaceCupInBoxMimicEnvCfg(FrankaPlaceCupInBoxEnvCfg, MimicEnvCfg):
-    """Place-only Mimic config: the source demo starts with the cup already held."""
+    """Mimic config: grasp the cup from the table, then place it into the box."""
 
     def __post_init__(self):
         super().__post_init__()
@@ -29,6 +29,19 @@ class FrankaPlaceCupInBoxMimicEnvCfg(FrankaPlaceCupInBoxEnvCfg, MimicEnvCfg):
 
         self.subtask_configs["franka"] = [
             SubTaskConfig(
+                object_ref="cup",
+                subtask_term_signal="grasp",
+                subtask_term_offset_range=(0, 10),
+                selection_strategy="nearest_neighbor_object",
+                selection_strategy_kwargs={"nn_k": 3},
+                action_noise=0.01,
+                num_interpolation_steps=5,
+                num_fixed_steps=0,
+                apply_noise_during_interpolation=False,
+                description="Grasp cup from the table",
+                next_subtask_description="Place cup into the box",
+            ),
+            SubTaskConfig(
                 object_ref="box",
                 subtask_term_signal=None,
                 subtask_term_offset_range=(0, 0),
@@ -38,6 +51,6 @@ class FrankaPlaceCupInBoxMimicEnvCfg(FrankaPlaceCupInBoxEnvCfg, MimicEnvCfg):
                 num_interpolation_steps=5,
                 num_fixed_steps=0,
                 apply_noise_during_interpolation=False,
-                description="Place the held cup into the box",
+                description="Place cup into the box",
             )
         ]
