@@ -161,7 +161,15 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
             label_ref[0] = ui.Label(f"Recorded: {recorded} demos")
 
         def update_label():
-            label_ref[0].text = f"Recorded: {recorded} demos"
+            if start_record_on_subtask is None:
+                label_ref[0].text = f"Recorded: {recorded} demos"
+                return
+            label_ref[0].text = (
+                f"Recorded: {recorded} demos | "
+                f"Recording: {'YES ●' if recording_started else 'no ○'} | "
+                f"gate={start_record_on_subtask} | "
+                f"streak={gate_count}/{start_record_on_subtask_steps}"
+            )
 
         env.sim.reset()
         env.reset()
@@ -174,6 +182,12 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
         )
         print(f"[TaskSuite] Controls: {controls_text}")
         print(f"[TaskSuite] Action smoothing alpha={smoothing_alpha:.2f}")
+        if start_record_on_subtask is not None:
+            print(
+                "[TaskSuite] Recording gate active: not recording yet. "
+                f"Waiting for subtask '{start_record_on_subtask}' "
+                f"for {start_record_on_subtask_steps} step(s)."
+            )
 
         with contextlib.suppress(KeyboardInterrupt), torch.inference_mode():
             while simulation_app.is_running():
@@ -237,6 +251,11 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                     success_count = 0
                     gate_count = 0
                     recording_started = start_record_on_subtask is None
+                    if start_record_on_subtask is not None:
+                        print(
+                            "[TaskSuite] Reset: not recording yet. "
+                            f"Waiting for subtask '{start_record_on_subtask}'."
+                        )
                     should_reset = False
 
                 rate_limiter.sleep(env)

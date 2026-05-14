@@ -227,7 +227,8 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                 min_dist_text = "inf" if min_dist == float("inf") else f"{min_dist:.3f}m"
                 label_ref[0].text = (
                     f"Recorded: {recorded} demos | "
-                    f"In sphere: {'YES ●' if in_sphere else 'no ○'} | "
+                    f"Recording: {'YES ●' if in_sphere else 'no ○'} | "
+                    f"In sphere: {'YES' if in_sphere else 'no'} | "
                     f"r={args_cli.sphere_radius:.3f}m | "
                     f"min_dist={min_dist_text}"
                 )
@@ -246,6 +247,10 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
             print(
                 f"[TaskSuite] Sphere radius={args_cli.sphere_radius}m "
                 f"object_half_height={args_cli.object_half_height}m\n"
+            )
+            print(
+                "[TaskSuite] Sphere gate active: not recording yet. "
+                "Recording starts when the gripper enters the target sphere."
             )
             print(
                 "[TaskSuite] Diversity:"
@@ -296,6 +301,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                         teleop.reset()
                         smoother.reset()
                         success_count = 0
+                        print("[TaskSuite] Reset: not recording yet. Waiting for sphere entry.")
                         should_reset = False
 
                     rate_limiter.sleep(env)
