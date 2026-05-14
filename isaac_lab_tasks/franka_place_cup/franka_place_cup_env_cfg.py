@@ -35,9 +35,8 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
-CUP_INIT_POS = (0.40, 0.0, 0.055)
+CUP_INIT_POS = (0.50, 0.0, 0.055)
 BOX_INIT_POS = (0.82, 0.22, 0.0203)
-FRANKA_NEAR_CUP_DEFAULT_POSE = [0.0444, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0400, 0.0400]
 
 
 def cup_is_placed_in_box_and_released(
@@ -99,12 +98,6 @@ def cup_is_grasped(
 
 @configclass
 class EventCfg:
-    init_franka_arm_pose = EventTerm(
-        func=franka_stack_events.set_default_joint_pose,
-        mode="reset",
-        params={"default_pose": FRANKA_NEAR_CUP_DEFAULT_POSE},
-    )
-
     reset_all = EventTerm(func=lift_mdp.reset_scene_to_default, mode="reset")
 
     reset_cup_pose = EventTerm(
