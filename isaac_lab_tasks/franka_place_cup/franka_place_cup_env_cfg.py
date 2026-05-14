@@ -35,8 +35,8 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
-CUP_INIT_POS = (0.42, 0.0, 0.055)
-BOX_INIT_POS = (0.72, 0.18, 0.0203)
+CUP_INIT_POS = (0.40, 0.0, 0.055)
+BOX_INIT_POS = (0.82, 0.22, 0.0203)
 FRANKA_NEAR_CUP_DEFAULT_POSE = [0.0444, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0400, 0.0400]
 
 
