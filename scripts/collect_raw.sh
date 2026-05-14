@@ -22,6 +22,8 @@ OVERWRITE="${OVERWRITE:-0}"
 DRAW_EE_TARGET_LINE="${DRAW_EE_TARGET_LINE:-0}"
 EE_TARGET_VIS_MODE="${EE_TARGET_VIS_MODE:-line}"
 EE_TARGET_LINE_THICKNESS="${EE_TARGET_LINE_THICKNESS:-}"
+START_RECORD_ON_SUBTASK="${START_RECORD_ON_SUBTASK:-}"
+START_RECORD_ON_SUBTASK_STEPS="${START_RECORD_ON_SUBTASK_STEPS:-}"
 
 ensure_data_env
 print_env_summary
@@ -49,9 +51,20 @@ if [ -n "$EE_TARGET_LINE_THICKNESS" ]; then
     DEBUG_VIS_ARGS+=(--ee_target_line_thickness "$EE_TARGET_LINE_THICKNESS")
 fi
 
+RECORD_GATE_ARGS=()
+if [ -n "$START_RECORD_ON_SUBTASK" ]; then
+    RECORD_GATE_ARGS+=(--start_record_on_subtask "$START_RECORD_ON_SUBTASK")
+fi
+if [ -n "$START_RECORD_ON_SUBTASK_STEPS" ]; then
+    RECORD_GATE_ARGS+=(--start_record_on_subtask_steps "$START_RECORD_ON_SUBTASK_STEPS")
+fi
+
 echo "[collect] spec=$SPEC mode=$COLLECTION_MODE demos=$NUM_DEMOS output=$OUTPUT_DIR"
 if [ ${#DEBUG_VIS_ARGS[@]} -gt 0 ]; then
     echo "[collect] debug visualization: ${DEBUG_VIS_ARGS[*]}"
+fi
+if [ ${#RECORD_GATE_ARGS[@]} -gt 0 ]; then
+    echo "[collect] record gate: ${RECORD_GATE_ARGS[*]}"
 fi
 
 for i in $(seq 1 "$NUM_DEMOS"); do
@@ -90,6 +103,7 @@ for i in $(seq 1 "$NUM_DEMOS"); do
             --dataset_file "$FILE" \
             --num_demos 1 \
             "${DEBUG_VIS_ARGS[@]}" \
+            "${RECORD_GATE_ARGS[@]}" \
             --enable_cameras
     fi
 

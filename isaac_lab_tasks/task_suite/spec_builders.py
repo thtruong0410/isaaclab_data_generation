@@ -29,6 +29,8 @@ def make_task_variant_specs(
     eval_report_success_at: tuple[int, ...] = (300, 500),
     normal_notes: tuple[str, ...] = ("Base task variant.",),
     sphere_notes: tuple[str, ...] = ("Near-affordance sphere-gated skill variant.",),
+    normal_start_record_on_subtask: str | None = None,
+    normal_start_record_on_subtask_steps: int = 1,
 ) -> tuple[TaskSuiteSpec, TaskSuiteSpec]:
     normal_spec = TaskSuiteSpec(
         key=f"{key_prefix}_normal",
@@ -53,6 +55,8 @@ def make_task_variant_specs(
             report_success_at=eval_report_success_at,
         ),
         notes=normal_notes,
+        normal_start_record_on_subtask=normal_start_record_on_subtask,
+        normal_start_record_on_subtask_steps=normal_start_record_on_subtask_steps,
     )
     sphere_spec = TaskSuiteSpec(
         key=f"{key_prefix}_sphere",

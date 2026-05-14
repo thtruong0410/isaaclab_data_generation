@@ -58,3 +58,5 @@ class TaskSuiteSpec:
     eval: EvalSpec
     sphere: SphereCollectionSpec | None = None
     notes: tuple[str, ...] = field(default_factory=tuple)
+    normal_start_record_on_subtask: str | None = None
+    normal_start_record_on_subtask_steps: int = 1

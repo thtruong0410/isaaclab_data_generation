@@ -96,6 +96,8 @@ class EeTargetLineVisualizer:
             return self._drawer_handle_positions(env)
         if "door" in self.spec.key:
             return self._door_handle_positions(env)
+        if self.spec.key.startswith("place_cup"):
+            return _as_xyz(env.scene["box"].data.root_pos_w).unsqueeze(1)
         return self._cabinet_frame_target_pos(env).unsqueeze(1)
 
     def _door_handle_positions(self, env) -> torch.Tensor:

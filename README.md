@@ -32,7 +32,8 @@ close_door_sphere
 close_drawer_normal
 close_drawer_sphere
 franka_bin_stack_normal  # native IsaacLab Franka cube-bin task
-franka_place_cup_in_box_normal  # Franka grasp cup from table, then place into box
+place_cup_normal         # grasp nearby cup, then place into farther box
+place_cup_sphere         # box-centered placement segment
 ```
 
 ## Environment
@@ -242,10 +243,9 @@ ready-to-run upstream task for the current data-generation pipeline because it
 uses Franka, relative IK actions, a bin/container, object placement, and an
 IsaacLab Mimic config.
 
-There is no exact upstream `Franka PlaceCupInBox` task where a cup starts on
-the table and must be grasped top-down before placing into a box. The local
-task below adapts the Franka bin-stack scene/control setup and changes the
-object/reset/success logic to one cup and one configurable box.
+There is no exact upstream Franka place-cup task where a cup starts near the
+arm, then gets placed into a farther box. The local task below adapts the
+Franka pick-cup setup and adds a target box plus place success logic.
 
 ```bash
 cd /home/ntruong/Truong/isaaclab_data_generation
@@ -253,21 +253,27 @@ bash scripts/collect_raw.sh franka_bin_stack_normal 10
 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh franka_bin_stack_normal 1000
 ```
 
-## Franka place cup in box
+## Franka place cup
 
-`franka_place_cup_in_box_normal` is the cup-to-box task requested for cup/box
-data. It adapts IsaacLab's Franka bin-stack scene/control pieces, but replaces
-the stack objects with one cup and one configurable box. On reset, the Franka
-starts from a fixed pose with the gripper open, the cup starts on the table,
-and the box is fixed in front of the robot.
+`place_cup_normal` and `place_cup_sphere` are built from the same control and
+cup setup as `franka_pick_cup`, then add one target box. The cup starts closer
+to the arm, while the box starts farther away.
 
 The intended demo is: move above the cup, grasp it from the top, lift it, move
 above the box, lower it, open the gripper, and retreat.
 
 ```bash
 cd /home/ntruong/Truong/isaaclab_data_generation
-bash scripts/collect_raw.sh franka_place_cup_in_box_normal 10
-HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh franka_place_cup_in_box_normal 1000
+bash scripts/collect_raw.sh place_cup_normal 10
+HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh place_cup_normal 1000
+```
+
+For the normal task, recording starts automatically when the `grasp` subtask
+turns true, so the exported HDF5 starts from the already-grasped cup state.
+For the sphere task, recording starts when the gripper reaches the box sphere:
+
+```bash
+bash scripts/collect_raw.sh place_cup_sphere 10
 ```
 
 ## Run a group

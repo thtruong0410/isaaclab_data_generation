@@ -42,8 +42,26 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
         default=10,
         help="Consecutive success steps required before exporting a demo.",
     )
+    parser.add_argument(
+        "--start_record_on_subtask",
+        type=str,
+        default=None,
+        help="Clear the recorder and start the exported episode when this subtask term first becomes true.",
+    )
+    parser.add_argument(
+        "--start_record_on_subtask_steps",
+        type=int,
+        default=1,
+        help="Consecutive true steps required for --start_record_on_subtask.",
+    )
     AppLauncher.add_app_launcher_args(parser)
     args_cli = parser.parse_args(forwarded_argv)
+    start_record_on_subtask = args_cli.start_record_on_subtask
+    if start_record_on_subtask is None:
+        start_record_on_subtask = spec.normal_start_record_on_subtask
+    start_record_on_subtask_steps = args_cli.start_record_on_subtask_steps
+    if args_cli.start_record_on_subtask is None and spec.normal_start_record_on_subtask is not None:
+        start_record_on_subtask_steps = spec.normal_start_record_on_subtask_steps
 
     app_launcher = AppLauncher(args_cli)
     simulation_app = app_launcher.app
@@ -134,6 +152,8 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
         should_reset = False
         recorded = 0
         success_count = 0
+        gate_count = 0
+        recording_started = start_record_on_subtask is None
 
         window = EmptyWindow(env, f"Task Demo Recorder — {spec.key}")
         label_ref = [None]
@@ -163,7 +183,28 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                 line_visualizer.update(env)
                 update_label()
 
-                if success_term is not None and not should_reset:
+                if start_record_on_subtask is not None and not recording_started and not should_reset:
+                    subtask_terms = env.obs_buf.get("subtask_terms", {})
+                    if start_record_on_subtask not in subtask_terms:
+                        raise KeyError(
+                            f"Subtask term '{start_record_on_subtask}' not found. "
+                            f"Available terms: {list(subtask_terms.keys())}"
+                        )
+                    if bool(subtask_terms[start_record_on_subtask][0]):
+                        gate_count += 1
+                        if gate_count >= start_record_on_subtask_steps:
+                            env.recorder_manager.reset([0])
+                            env.recorder_manager.record_post_reset([0])
+                            recording_started = True
+                            success_count = 0
+                            print(
+                                "[TaskSuite] Recording started at subtask "
+                                f"'{start_record_on_subtask}'."
+                            )
+                    else:
+                        gate_count = 0
+
+                if success_term is not None and recording_started and not should_reset:
                     if bool(success_term.func(env, **success_term.params)[0]):
                         success_count += 1
                         if success_count >= args_cli.num_success_steps:
@@ -194,6 +235,8 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                     teleop.reset()
                     smoother.reset()
                     success_count = 0
+                    gate_count = 0
+                    recording_started = start_record_on_subtask is None
                     should_reset = False
 
                 rate_limiter.sleep(env)
