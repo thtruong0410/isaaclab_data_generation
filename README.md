@@ -31,7 +31,7 @@ close_door_normal
 close_door_sphere
 close_drawer_normal
 close_drawer_sphere
-place_toy2box_normal  # native IsaacLab Agibot place-to-box task
+franka_bin_stack_normal  # native IsaacLab Franka cube-bin task
 ```
 
 ## Environment
@@ -233,22 +233,23 @@ bash scripts/interleave_raw_demos.sh open_drawer_normal
 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh open_drawer_normal
 ```
 
-## Native place task
+## Native Franka placement-like task
 
-`place_toy2box_normal` reuses IsaacLab's upstream
-`Isaac-Place-Toy2Box-Agibot-Right-Arm-RmpFlow-v0` environment and its Mimic
-config. This is the closest upstream task to a cup-in-box primitive: it places
-an object into a box, already has observations, success logic, and subtask
-config in IsaacLab.
+`franka_bin_stack_normal` reuses IsaacLab's upstream
+`Isaac-Stack-Cube-Bin-Franka-IK-Rel-Mimic-v0` task. This is the closest
+ready-to-run upstream task for the current data-generation pipeline because it
+uses Franka, relative IK actions, a bin/container, object placement, and an
+IsaacLab Mimic config.
 
-There is no exact upstream `Franka PlaceCupInBox` task. If we need that exact
-task, it should be adapted from IsaacLab's native `place_toy2box` or Franka
-bin-stack configs, not from a standalone mock environment.
+There is no exact upstream `Franka PlaceCupInBox` task where the cup starts
+already grasped on the gripper. If we need that exact task, adapt it from the
+Franka bin-stack scene/control setup and change the object/reset/success logic
+to one cup and one configurable box.
 
 ```bash
 cd /home/ntruong/Truong/isaaclab_data_generation
-bash scripts/collect_raw.sh place_toy2box_normal 10
-HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh place_toy2box_normal 1000
+bash scripts/collect_raw.sh franka_bin_stack_normal 10
+HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh franka_bin_stack_normal 1000
 ```
 
 ## Run a group

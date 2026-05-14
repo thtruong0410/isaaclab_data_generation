@@ -19,7 +19,7 @@ def _ensure_specs_loaded() -> None:
     global _SPECS_LOADED
     if _SPECS_LOADED:
         return
-    from .specs import close_door, close_drawer, open_door, open_drawer, place_toy2box  # noqa: F401
+    from .specs import close_door, close_drawer, franka_bin_stack, open_door, open_drawer  # noqa: F401
 
     _SPECS_LOADED = True
 
