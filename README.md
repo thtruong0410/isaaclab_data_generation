@@ -32,6 +32,7 @@ close_door_sphere
 close_drawer_normal
 close_drawer_sphere
 franka_bin_stack_normal  # native IsaacLab Franka cube-bin task
+franka_place_cup_in_box_normal  # Franka place-only cup into box task
 ```
 
 ## Environment
@@ -250,6 +251,23 @@ to one cup and one configurable box.
 cd /home/ntruong/Truong/isaaclab_data_generation
 bash scripts/collect_raw.sh franka_bin_stack_normal 10
 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh franka_bin_stack_normal 1000
+```
+
+## Franka place cup in box
+
+`franka_place_cup_in_box_normal` is the place-only task requested for cup/box
+data. It adapts IsaacLab's Franka bin-stack scene/control pieces, but replaces
+the stack objects with one cup and one configurable box. On reset, the Franka
+starts from a fixed pose, the gripper is closed, and the cup is placed at the
+gripper so collection starts after grasping.
+
+The intended demo is: move the already-held cup above the box, lower it, open
+the gripper, and retreat.
+
+```bash
+cd /home/ntruong/Truong/isaaclab_data_generation
+bash scripts/collect_raw.sh franka_place_cup_in_box_normal 10
+HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh franka_place_cup_in_box_normal 1000
 ```
 
 ## Run a group
