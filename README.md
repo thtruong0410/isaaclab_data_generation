@@ -31,6 +31,7 @@ close_door_normal
 close_door_sphere
 close_drawer_normal
 close_drawer_sphere
+place_toy2box_normal  # native IsaacLab Agibot place-to-box task
 ```
 
 ## Environment
@@ -230,6 +231,24 @@ normal mixed source folder:
 ```bash
 bash scripts/interleave_raw_demos.sh open_drawer_normal
 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh open_drawer_normal
+```
+
+## Native place task
+
+`place_toy2box_normal` reuses IsaacLab's upstream
+`Isaac-Place-Toy2Box-Agibot-Right-Arm-RmpFlow-v0` environment and its Mimic
+config. This is the closest upstream task to a cup-in-box primitive: it places
+an object into a box, already has observations, success logic, and subtask
+config in IsaacLab.
+
+There is no exact upstream `Franka PlaceCupInBox` task. If we need that exact
+task, it should be adapted from IsaacLab's native `place_toy2box` or Franka
+bin-stack configs, not from a standalone mock environment.
+
+```bash
+cd /home/ntruong/Truong/isaaclab_data_generation
+bash scripts/collect_raw.sh place_toy2box_normal 10
+HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh place_toy2box_normal 1000
 ```
 
 ## Run a group
