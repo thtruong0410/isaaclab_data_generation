@@ -35,6 +35,11 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
+CUP_INIT_POS = (0.42, 0.0, 0.055)
+BOX_INIT_POS = (0.72, 0.18, 0.0203)
+FRANKA_NEAR_CUP_DEFAULT_POSE = [0.0444, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0400, 0.0400]
+
+
 def cup_is_placed_in_box_and_released(
     env: ManagerBasedRLEnv,
     *,
@@ -94,13 +99,24 @@ def cup_is_grasped(
 
 @configclass
 class EventCfg:
+    init_franka_arm_pose = EventTerm(
+        func=franka_stack_events.set_default_joint_pose,
+        mode="reset",
+        params={"default_pose": FRANKA_NEAR_CUP_DEFAULT_POSE},
+    )
+
     reset_all = EventTerm(func=lift_mdp.reset_scene_to_default, mode="reset")
 
     reset_cup_pose = EventTerm(
         func=franka_stack_events.randomize_object_pose,
         mode="reset",
         params={
-            "pose_range": {"x": (0.45, 0.45), "y": (-0.14, -0.14), "z": (0.055, 0.055), "yaw": (0.0, 0.0)},
+            "pose_range": {
+                "x": (CUP_INIT_POS[0], CUP_INIT_POS[0]),
+                "y": (CUP_INIT_POS[1], CUP_INIT_POS[1]),
+                "z": (CUP_INIT_POS[2], CUP_INIT_POS[2]),
+                "yaw": (0.0, 0.0),
+            },
             "min_separation": 0.0,
             "asset_cfgs": [SceneEntityCfg("object")],
         },
@@ -110,7 +126,12 @@ class EventCfg:
         func=franka_stack_events.randomize_object_pose,
         mode="reset",
         params={
-            "pose_range": {"x": (0.72, 0.72), "y": (0.12, 0.12), "z": (0.0203, 0.0203), "yaw": (0.0, 0.0)},
+            "pose_range": {
+                "x": (BOX_INIT_POS[0], BOX_INIT_POS[0]),
+                "y": (BOX_INIT_POS[1], BOX_INIT_POS[1]),
+                "z": (BOX_INIT_POS[2], BOX_INIT_POS[2]),
+                "yaw": (0.0, 0.0),
+            },
             "min_separation": 0.0,
             "asset_cfgs": [SceneEntityCfg("box")],
         },
@@ -140,7 +161,7 @@ class FrankaPlaceCupEnvCfg(FrankaCubeLiftEnvCfg):
 
         self.scene.object = RigidObjectCfg(
             prim_path="{ENV_REGEX_NS}/Cup",
-            init_state=RigidObjectCfg.InitialStateCfg(pos=(0.45, -0.14, 0.055), rot=(1.0, 0.0, 0.0, 0.0)),
+            init_state=RigidObjectCfg.InitialStateCfg(pos=CUP_INIT_POS, rot=(1.0, 0.0, 0.0, 0.0)),
             spawn=UsdFileCfg(
                 usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Objects/Mug/mug.usd",
                 scale=(1.0, 1.0, 1.0),
@@ -158,7 +179,7 @@ class FrankaPlaceCupEnvCfg(FrankaCubeLiftEnvCfg):
 
         self.scene.box = RigidObjectCfg(
             prim_path="{ENV_REGEX_NS}/Box",
-            init_state=RigidObjectCfg.InitialStateCfg(pos=(0.72, 0.12, 0.0203), rot=(1.0, 0.0, 0.0, 0.0)),
+            init_state=RigidObjectCfg.InitialStateCfg(pos=BOX_INIT_POS, rot=(1.0, 0.0, 0.0, 0.0)),
             spawn=UsdFileCfg(
                 usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/sorting_bin_blue.usd",
                 scale=(1.1, 1.6, 3.3),
