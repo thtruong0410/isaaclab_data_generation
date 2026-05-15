@@ -101,7 +101,7 @@ class BoxSphereEntryCfg(RecorderTermCfg):
     cup_name: str = "object"
     robot_name: str = "robot"
     require_cup_held: bool = True
-    held_dist: float = 0.10
+    held_dist: float = 0.16
     gripper_closed_threshold: float = 0.025
 
 

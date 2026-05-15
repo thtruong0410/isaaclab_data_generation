@@ -40,7 +40,8 @@ CUP_INIT_POS = (0.40, -0.26, 0.055)
 BOX_INIT_POS = (0.68, 0.22, 0.0203)
 ARM_JOINT_RESET_STD = 0.02
 FRANKA_ARM_DEFAULT_POSE = [-0.38, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0, 0.0]
-CUP_GRASP_OFFSET_IN_HAND = (0.0, 0.0, 0.046)
+CUP_RIM_OFFSET_IN_HAND = (0.0, -0.055, 0.0)
+CUP_GRASP_FINGER_POS = 0.012
 
 
 def reset_cup_to_gripper(
@@ -50,10 +51,11 @@ def reset_cup_to_gripper(
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     hand_body_name: str = "panda_hand",
-    cup_offset_in_hand: tuple[float, float, float] = CUP_GRASP_OFFSET_IN_HAND,
-    gripper_joint_pos: float = 0.0,
+    cup_rim_offset_in_hand: tuple[float, float, float] = CUP_RIM_OFFSET_IN_HAND,
+    cup_table_z: float = CUP_INIT_POS[2],
+    gripper_joint_pos: float = CUP_GRASP_FINGER_POS,
 ) -> None:
-    """Initialize the cup at the gripper center with the Franka fingers closed.
+    """Initialize the cup on the table with the Franka fingers closed on its rim.
 
     The arm seed is chosen so this grasped cup starts on the lower side of the table.
     """
@@ -77,8 +79,9 @@ def reset_cup_to_gripper(
     body_ids, _ = robot.find_bodies([hand_body_name], preserve_order=True)
     hand_pos = robot.data.body_pos_w[env_ids, body_ids[0], :3]
     hand_quat = robot.data.body_quat_w[env_ids, body_ids[0], :]
-    offset = torch.tensor(cup_offset_in_hand, device=env.device, dtype=hand_pos.dtype).expand_as(hand_pos)
+    offset = torch.tensor(cup_rim_offset_in_hand, device=env.device, dtype=hand_pos.dtype).expand_as(hand_pos)
     cup_pos = hand_pos + math_utils.quat_apply(hand_quat, offset)
+    cup_pos[:, 2] = env.scene.env_origins[env_ids, 2] + cup_table_z
     cup_quat = torch.tensor((1.0, 0.0, 0.0, 0.0), device=env.device, dtype=hand_pos.dtype).repeat(len(env_ids), 1)
     cup.write_root_pose_to_sim(torch.cat((cup_pos, cup_quat), dim=-1), env_ids=env_ids)
     cup.write_root_velocity_to_sim(torch.zeros((len(env_ids), 6), device=env.device), env_ids=env_ids)
@@ -125,7 +128,7 @@ def cup_is_grasped(
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     ee_frame_cfg: SceneEntityCfg = SceneEntityCfg("ee_frame"),
     cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
-    dist_threshold: float = 0.08,
+    dist_threshold: float = 0.16,
     gripper_threshold: float = 0.025,
 ) -> torch.Tensor:
     """Subtask signal: cup is close to the gripper and both fingers are closed."""
@@ -169,8 +172,9 @@ class EventCfg:
         params={
             "robot_cfg": SceneEntityCfg("robot"),
             "cup_cfg": SceneEntityCfg("object"),
-            "cup_offset_in_hand": CUP_GRASP_OFFSET_IN_HAND,
-            "gripper_joint_pos": 0.0,
+            "cup_rim_offset_in_hand": CUP_RIM_OFFSET_IN_HAND,
+            "cup_table_z": CUP_INIT_POS[2],
+            "gripper_joint_pos": CUP_GRASP_FINGER_POS,
         },
     )
 
