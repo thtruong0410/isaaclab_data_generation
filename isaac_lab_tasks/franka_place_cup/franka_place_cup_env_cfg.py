@@ -198,7 +198,7 @@ class FrankaPlaceCupEnvCfg(FrankaCubeLiftEnvCfg):
             init_state=RigidObjectCfg.InitialStateCfg(pos=BOX_INIT_POS, rot=(1.0, 0.0, 0.0, 0.0)),
             spawn=UsdFileCfg(
                 usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/sorting_bin_blue.usd",
-                scale=(0.75, 1.0, 2.2),
+                scale=(0.90, 1.20, 2.4),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(),
             ),
         )
