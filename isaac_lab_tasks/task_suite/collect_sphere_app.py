@@ -8,7 +8,7 @@ import time
 
 from isaaclab.app import AppLauncher
 
-from .debug_visualization import EeTargetLineVisualizer
+from .debug_visualization import EeTargetLineVisualizer, ee_to_cup_vector_text
 from .demo_collection_utils import ActionSmoother, apply_collection_diversity, build_teleop_device
 from .runtime import ensure_project_root_on_path, import_object_by_path, import_registration_modules
 from .types import TaskSuiteSpec
@@ -67,6 +67,9 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                         help="Balanced RGB jitter magnitude applied to the dome light color.")
     AppLauncher.add_app_launcher_args(parser)
     args_cli = parser.parse_args(forwarded_argv)
+    show_ee_cup_vector = spec.key.startswith("place_cup")
+    if show_ee_cup_vector:
+        args_cli.draw_ee_target_line = False
 
     app_launcher = AppLauncher(args_cli)
     simulation_app = app_launcher.app
@@ -225,12 +228,14 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                 in_sphere = env.extras.get("_sphere_entered", False)
                 min_dist = env.extras.get("_sphere_min_dist", float("inf"))
                 min_dist_text = "inf" if min_dist == float("inf") else f"{min_dist:.3f}m"
+                cup_vector_text = ee_to_cup_vector_text(env) if show_ee_cup_vector else ""
                 label_ref[0].text = (
                     f"Recorded: {recorded} demos | "
                     f"Recording: {'YES ●' if in_sphere else 'no ○'} | "
                     f"In sphere: {'YES' if in_sphere else 'no'} | "
                     f"r={args_cli.sphere_radius:.3f}m | "
                     f"min_dist={min_dist_text}"
+                    f"{cup_vector_text}"
                 )
 
             env.sim.reset()

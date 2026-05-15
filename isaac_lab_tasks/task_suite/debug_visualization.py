@@ -97,8 +97,14 @@ class EeTargetLineVisualizer:
         if "door" in self.spec.key:
             return self._door_handle_positions(env)
         if self.spec.key.startswith("place_cup"):
-            return _as_xyz(env.scene["box"].data.root_pos_w).unsqueeze(1)
+            return self._cup_positions(env).unsqueeze(1)
         return self._cabinet_frame_target_pos(env).unsqueeze(1)
+
+    def _cup_positions(self, env) -> torch.Tensor:
+        try:
+            return _as_xyz(env.scene["object"].data.root_pos_w)
+        except Exception:
+            return _as_xyz(env.scene["cup"].data.root_pos_w)
 
     def _door_handle_positions(self, env) -> torch.Tensor:
         from isaac_lab_tasks.franka_open_door.franka_open_door_env_cfg import resolve_door_target_variants
@@ -135,3 +141,20 @@ class EeTargetLineVisualizer:
 
     def _cabinet_frame_target_pos(self, env) -> torch.Tensor:
         return _as_xyz(env.scene["cabinet_frame"].data.target_pos_w)
+
+
+def ee_to_cup_vector_text(env) -> str:
+    """Return a compact one-line vector from gripper center to cup center."""
+
+    try:
+        ee_pos = _as_xyz(env.scene["ee_frame"].data.target_pos_w)[0].detach()
+        try:
+            cup_pos = _as_xyz(env.scene["object"].data.root_pos_w)[0].detach()
+        except Exception:
+            cup_pos = _as_xyz(env.scene["cup"].data.root_pos_w)[0].detach()
+        delta = cup_pos - ee_pos
+        dist = torch.linalg.vector_norm(delta).item()
+        dx, dy, dz = delta.cpu().tolist()
+    except Exception:
+        return ""
+    return f" | ee->cup=({dx:+.3f}, {dy:+.3f}, {dz:+.3f})m d={dist:.3f}m"
