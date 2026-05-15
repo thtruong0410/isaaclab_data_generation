@@ -36,10 +36,10 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
-CUP_INIT_POS = (0.40, -0.20, 0.055)
+CUP_INIT_POS = (0.40, -0.26, 0.055)
 BOX_INIT_POS = (0.68, 0.22, 0.0203)
 ARM_JOINT_RESET_STD = 0.02
-FRANKA_ARM_DEFAULT_POSE = [0.0444, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0, 0.0]
+FRANKA_ARM_DEFAULT_POSE = [-0.38, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0, 0.0]
 CUP_GRASP_OFFSET_IN_HAND = (0.0, 0.0, 0.107)
 
 
@@ -53,7 +53,10 @@ def reset_cup_to_gripper(
     cup_offset_in_hand: tuple[float, float, float] = CUP_GRASP_OFFSET_IN_HAND,
     gripper_joint_pos: float = 0.0,
 ) -> None:
-    """Initialize the cup at the gripper center with the Franka fingers closed."""
+    """Initialize the cup at the gripper center with the Franka fingers closed.
+
+    The arm seed is chosen so this grasped cup starts on the lower side of the table.
+    """
 
     robot: Articulation = env.scene[robot_cfg.name]
     cup: RigidObject = env.scene[cup_cfg.name]
