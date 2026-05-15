@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import torch
 
 import isaaclab.sim as sim_utils
+import isaaclab.utils.math as math_utils
 from isaaclab.assets import Articulation, RigidObject, RigidObjectCfg
 from isaaclab.controllers.differential_ik_cfg import DifferentialIKControllerCfg
 from isaaclab.envs.mdp.actions.actions_cfg import DifferentialInverseKinematicsActionCfg
@@ -37,11 +38,47 @@ if TYPE_CHECKING:
 
 CUP_INIT_POS = (0.40, -0.20, 0.055)
 BOX_INIT_POS = (0.68, 0.22, 0.0203)
-CUP_X_RANGE = (0.36, 0.44)
-CUP_Y_RANGE = (-0.24, -0.16)
-CUP_YAW_RANGE = (-0.50, 0.50)
 ARM_JOINT_RESET_STD = 0.02
-FRANKA_ARM_DEFAULT_POSE = [0.0444, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.04, 0.04]
+FRANKA_ARM_DEFAULT_POSE = [0.0444, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0, 0.0]
+CUP_GRASP_OFFSET_IN_HAND = (0.0, 0.0, 0.107)
+
+
+def reset_cup_to_gripper(
+    env: ManagerBasedRLEnv,
+    env_ids: torch.Tensor,
+    *,
+    robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+    hand_body_name: str = "panda_hand",
+    cup_offset_in_hand: tuple[float, float, float] = CUP_GRASP_OFFSET_IN_HAND,
+    gripper_joint_pos: float = 0.0,
+) -> None:
+    """Initialize the cup at the gripper center with the Franka fingers closed."""
+
+    robot: Articulation = env.scene[robot_cfg.name]
+    cup: RigidObject = env.scene[cup_cfg.name]
+
+    joint_pos = robot.data.joint_pos[env_ids].clone()
+    joint_vel = robot.data.joint_vel[env_ids].clone()
+    finger_ids, _ = robot.find_joints(["panda_finger_joint1", "panda_finger_joint2"], preserve_order=True)
+    joint_pos[:, finger_ids] = gripper_joint_pos
+    joint_vel[:, finger_ids] = 0.0
+    robot.set_joint_position_target(joint_pos, env_ids=env_ids)
+    robot.set_joint_velocity_target(joint_vel, env_ids=env_ids)
+    robot.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
+
+    # Push the freshly written joint state through PhysX before reading the hand pose.
+    env.scene.write_data_to_sim()
+    env.sim.forward()
+
+    body_ids, _ = robot.find_bodies([hand_body_name], preserve_order=True)
+    hand_pos = robot.data.body_pos_w[env_ids, body_ids[0], :3]
+    hand_quat = robot.data.body_quat_w[env_ids, body_ids[0], :]
+    offset = torch.tensor(cup_offset_in_hand, device=env.device, dtype=hand_pos.dtype).expand_as(hand_pos)
+    cup_pos = hand_pos + math_utils.quat_apply(hand_quat, offset)
+    cup_quat = torch.tensor((1.0, 0.0, 0.0, 0.0), device=env.device, dtype=hand_pos.dtype).repeat(len(env_ids), 1)
+    cup.write_root_pose_to_sim(torch.cat((cup_pos, cup_quat), dim=-1), env_ids=env_ids)
+    cup.write_root_velocity_to_sim(torch.zeros((len(env_ids), 6), device=env.device), env_ids=env_ids)
 
 
 def cup_is_placed_in_box_and_released(
@@ -123,18 +160,14 @@ class EventCfg:
         },
     )
 
-    reset_cup_pose = EventTerm(
-        func=franka_stack_events.randomize_object_pose,
+    reset_cup_to_gripper = EventTerm(
+        func=reset_cup_to_gripper,
         mode="reset",
         params={
-            "pose_range": {
-                "x": CUP_X_RANGE,
-                "y": CUP_Y_RANGE,
-                "z": (CUP_INIT_POS[2], CUP_INIT_POS[2]),
-                "yaw": CUP_YAW_RANGE,
-            },
-            "min_separation": 0.0,
-            "asset_cfgs": [SceneEntityCfg("object")],
+            "robot_cfg": SceneEntityCfg("robot"),
+            "cup_cfg": SceneEntityCfg("object"),
+            "cup_offset_in_hand": CUP_GRASP_OFFSET_IN_HAND,
+            "gripper_joint_pos": 0.0,
         },
     )
 
@@ -165,7 +198,7 @@ class _PlaceCupSubtaskTermsCfg(ObsGroup):
 
 @configclass
 class FrankaPlaceCupEnvCfg(FrankaCubeLiftEnvCfg):
-    """Pick the nearby cup, place it into a farther box, then retreat."""
+    """Place an already-grasped cup into a farther box, then retreat."""
 
     def __post_init__(self):
         super().__post_init__()

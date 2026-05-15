@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-"""MimicGen config for grasping a cup and placing it into a box."""
+"""MimicGen config for placing an already-grasped cup into a box."""
 
 from __future__ import annotations
 
@@ -23,15 +23,13 @@ def _get_env_int(name: str, default: int) -> int:
 
 @configclass
 class FrankaPlaceCupMimicEnvCfg(FrankaPlaceCupEnvCfg, MimicEnvCfg):
-    """Two subtasks: grasp nearby cup, then place it into the farther box."""
+    """Single place-only subtask: the cup starts grasped in the Franka gripper."""
 
     def __post_init__(self):
         super().__post_init__()
 
         action_noise = _get_env_float("PLACE_CUP_MIMIC_ACTION_NOISE", 0.01)
         interp_steps = _get_env_int("PLACE_CUP_MIMIC_INTERP_STEPS", 5)
-        grasp_offset_min = _get_env_int("PLACE_CUP_MIMIC_GRASP_OFFSET_MIN", 0)
-        grasp_offset_max = _get_env_int("PLACE_CUP_MIMIC_GRASP_OFFSET_MAX", 10)
         selection_nn_k = _get_env_int("PLACE_CUP_MIMIC_NN_K", 3)
 
         self.datagen_config.name = "demo_src_place_cup_franka_D0"
@@ -46,19 +44,6 @@ class FrankaPlaceCupMimicEnvCfg(FrankaPlaceCupEnvCfg, MimicEnvCfg):
         self.datagen_config.seed = 1
 
         self.subtask_configs["franka"] = [
-            SubTaskConfig(
-                object_ref="object",
-                subtask_term_signal="grasp",
-                subtask_term_offset_range=(grasp_offset_min, grasp_offset_max),
-                selection_strategy="nearest_neighbor_object",
-                selection_strategy_kwargs={"nn_k": selection_nn_k},
-                action_noise=action_noise,
-                num_interpolation_steps=interp_steps,
-                num_fixed_steps=0,
-                apply_noise_during_interpolation=False,
-                description="Grasp cup",
-                next_subtask_description="Place cup into the box",
-            ),
             SubTaskConfig(
                 object_ref="box",
                 subtask_term_signal=None,

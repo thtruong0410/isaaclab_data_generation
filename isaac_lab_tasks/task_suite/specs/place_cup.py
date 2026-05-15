@@ -25,14 +25,13 @@ PLACE_CUP_NORMAL_SPEC, PLACE_CUP_SPHERE_SPEC = make_task_variant_specs(
     eval_max_steps=600,
     eval_report_success_at=(300, 600),
     normal_notes=(
-        "Cup starts near the arm; the box is farther away.",
-        "Normal collection starts recording when the cup grasp signal becomes true.",
+        "Cup starts already grasped in the Franka gripper.",
+        "Normal collection records the place-only motion from reset.",
     ),
     sphere_notes=(
         "Box-centered sphere-gated placement skill.",
-        "Recording starts when the gripper reaches the box area after grasping the cup.",
+        "Recording starts when the already-held cup reaches the box area.",
     ),
-    normal_start_record_on_subtask="grasp",
 )
 
 register_task_spec(PLACE_CUP_NORMAL_SPEC)
