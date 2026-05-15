@@ -40,7 +40,7 @@ CUP_INIT_POS = (0.40, -0.26, 0.065)
 BOX_INIT_POS = (0.68, 0.22, 0.0203)
 ARM_JOINT_RESET_STD = 0.02
 FRANKA_ARM_DEFAULT_POSE = [-0.38, -0.0194, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0, 0.0]
-CUP_RIM_OFFSET_IN_HAND = (0.0, -0.092, 0.0)
+CUP_RIM_OFFSET_IN_HAND = (0.025, -0.092, 0.212)
 CUP_GRASP_FINGER_POS = 0.008
 
 
@@ -52,12 +52,11 @@ def reset_cup_to_gripper(
     cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     hand_body_name: str = "panda_hand",
     cup_rim_offset_in_hand: tuple[float, float, float] = CUP_RIM_OFFSET_IN_HAND,
-    cup_table_z: float = CUP_INIT_POS[2],
     gripper_joint_pos: float = CUP_GRASP_FINGER_POS,
 ) -> None:
-    """Initialize the cup on the table with the Franka fingers closed on its rim.
+    """Initialize the cup from the randomized gripper pose with the fingers closed on its rim.
 
-    The arm seed is chosen so this grasped cup starts on the lower side of the table.
+    The cup follows the gripper frame on reset instead of being clamped to a table-relative z.
     """
 
     robot: Articulation = env.scene[robot_cfg.name]
@@ -81,7 +80,6 @@ def reset_cup_to_gripper(
     hand_quat = robot.data.body_quat_w[env_ids, body_ids[0], :]
     offset = torch.tensor(cup_rim_offset_in_hand, device=env.device, dtype=hand_pos.dtype).expand_as(hand_pos)
     cup_pos = hand_pos + math_utils.quat_apply(hand_quat, offset)
-    cup_pos[:, 2] = env.scene.env_origins[env_ids, 2] + cup_table_z
     cup_quat = torch.tensor((1.0, 0.0, 0.0, 0.0), device=env.device, dtype=hand_pos.dtype).repeat(len(env_ids), 1)
     cup.write_root_pose_to_sim(torch.cat((cup_pos, cup_quat), dim=-1), env_ids=env_ids)
     cup.write_root_velocity_to_sim(torch.zeros((len(env_ids), 6), device=env.device), env_ids=env_ids)
@@ -173,7 +171,6 @@ class EventCfg:
             "robot_cfg": SceneEntityCfg("robot"),
             "cup_cfg": SceneEntityCfg("object"),
             "cup_rim_offset_in_hand": CUP_RIM_OFFSET_IN_HAND,
-            "cup_table_z": CUP_INIT_POS[2],
             "gripper_joint_pos": CUP_GRASP_FINGER_POS,
         },
     )
