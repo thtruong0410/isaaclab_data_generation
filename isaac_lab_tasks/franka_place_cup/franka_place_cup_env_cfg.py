@@ -35,12 +35,13 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
-CUP_INIT_POS = (0.50, 0.0, 0.055)
-BOX_INIT_POS = (0.82, 0.22, 0.0203)
-CUP_X_RANGE = (0.46, 0.54)
+CUP_INIT_POS = (0.40, 0.0, 0.055)
+BOX_INIT_POS = (0.72, 0.22, 0.0203)
+CUP_X_RANGE = (0.36, 0.44)
 CUP_Y_RANGE = (-0.08, 0.08)
 CUP_YAW_RANGE = (-0.50, 0.50)
 ARM_JOINT_RESET_STD = 0.02
+FRANKA_ARM_DEFAULT_POSE = [0.0444, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.04, 0.04]
 
 
 def cup_is_placed_in_box_and_released(
@@ -52,7 +53,7 @@ def cup_is_placed_in_box_and_released(
     ee_frame_cfg: SceneEntityCfg = SceneEntityCfg("ee_frame"),
     xy_threshold: float = 0.11,
     height_diff: float = 0.08,
-    height_threshold: float = 0.08,
+    height_threshold: float = 0.06,
     no_contact_distance: float = 0.065,
 ) -> torch.Tensor:
     """Success: gripper is open, cup is in the box, and fingers have retreated from the cup."""
@@ -103,6 +104,14 @@ def cup_is_grasped(
 @configclass
 class EventCfg:
     reset_all = EventTerm(func=lift_mdp.reset_scene_to_default, mode="reset")
+
+    init_franka_arm_pose = EventTerm(
+        func=franka_stack_events.set_default_joint_pose,
+        mode="reset",
+        params={
+            "default_pose": FRANKA_ARM_DEFAULT_POSE,
+        },
+    )
 
     randomize_franka_joint_state = EventTerm(
         func=franka_stack_events.randomize_joint_by_gaussian_offset,
@@ -189,7 +198,7 @@ class FrankaPlaceCupEnvCfg(FrankaCubeLiftEnvCfg):
             init_state=RigidObjectCfg.InitialStateCfg(pos=BOX_INIT_POS, rot=(1.0, 0.0, 0.0, 0.0)),
             spawn=UsdFileCfg(
                 usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/sorting_bin_blue.usd",
-                scale=(1.1, 1.6, 3.3),
+                scale=(0.75, 1.0, 2.2),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(),
             ),
         )

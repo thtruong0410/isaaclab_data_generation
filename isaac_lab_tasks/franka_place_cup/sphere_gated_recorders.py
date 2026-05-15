@@ -94,8 +94,8 @@ class BoxGatedProcessedActionsRecorder(RecorderTerm):
 
 @configclass
 class BoxSphereEntryCfg(RecorderTermCfg):
-    sphere_radius: float = 0.18
-    object_half_height: float = 0.08
+    sphere_radius: float = 0.15
+    object_half_height: float = 0.06
     ee_frame_name: str = "ee_frame"
     object_name: str = "box"
     cup_name: str = "object"
