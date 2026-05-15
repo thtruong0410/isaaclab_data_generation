@@ -35,10 +35,10 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
-CUP_INIT_POS = (0.40, 0.0, 0.055)
-BOX_INIT_POS = (0.72, 0.22, 0.0203)
-CUP_X_RANGE = (0.36, 0.44)
-CUP_Y_RANGE = (-0.08, 0.08)
+CUP_INIT_POS = (0.48, -0.18, 0.055)
+BOX_INIT_POS = (0.48, 0.18, 0.0203)
+CUP_X_RANGE = (0.44, 0.52)
+CUP_Y_RANGE = (-0.22, -0.12)
 CUP_YAW_RANGE = (-0.50, 0.50)
 ARM_JOINT_RESET_STD = 0.02
 FRANKA_ARM_DEFAULT_POSE = [0.0444, -0.1894, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.04, 0.04]
@@ -51,7 +51,7 @@ def cup_is_placed_in_box_and_released(
     cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     box_cfg: SceneEntityCfg = SceneEntityCfg("box"),
     ee_frame_cfg: SceneEntityCfg = SceneEntityCfg("ee_frame"),
-    xy_threshold: float = 0.11,
+    xy_threshold: float = 0.085,
     height_diff: float = 0.08,
     height_threshold: float = 0.06,
     no_contact_distance: float = 0.065,
@@ -198,7 +198,7 @@ class FrankaPlaceCupEnvCfg(FrankaCubeLiftEnvCfg):
             init_state=RigidObjectCfg.InitialStateCfg(pos=BOX_INIT_POS, rot=(1.0, 0.0, 0.0, 0.0)),
             spawn=UsdFileCfg(
                 usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/sorting_bin_blue.usd",
-                scale=(0.75, 1.0, 2.2),
+                scale=(0.60, 0.80, 2.0),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(),
             ),
         )
