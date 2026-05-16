@@ -235,6 +235,48 @@ bash scripts/interleave_raw_demos.sh open_drawer_normal
 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_budget_comparison.sh open_drawer_normal
 ```
 
+### Cumulative chunked MimicGen budgets
+
+Use this when each 10-demo source block should generate its own 1000 MimicGen
+demos, then larger budgets are formed by merging the generated blocks. This is
+useful when `20` should mean `1000 demos from source demos 1-10` plus `1000
+demos from source demos 11-20`, instead of rerunning MimicGen once on the first
+20 source demos.
+
+```bash
+cd /home/ntruong/Truong/isaaclab_data_generation
+
+HEADLESS=1 NUM_ENVS=1 \
+bash scripts/mimic_budget_cumulative.sh place_cup_normal
+```
+
+Default behavior:
+
+```text
+data/mimic/place_cup_normal_10/  -> 1000 generated demos
+data/mimic/place_cup_normal_20/  -> 2000 generated demos
+data/mimic/place_cup_normal_30/  -> 3000 generated demos
+data/mimic/place_cup_normal_40/  -> 4000 generated demos
+data/mimic/place_cup_normal_50/  -> 5000 generated demos
+```
+
+Intermediate per-block MimicGen outputs are kept under:
+
+```text
+data/mimic/place_cup_normal_chunks/
+```
+
+The raw source demos are only symlinked into temporary chunk folders under
+`data/source_subsets/`; the original HDF5 files are untouched. Useful options:
+
+```bash
+BUDGETS="10 20 30 40 50" \
+CHUNK_SIZE=10 \
+OVERWRITE=1 \
+HEADLESS=1 NUM_ENVS=1 ISAAC_DEVICE=cuda:0 \
+bash scripts/mimic_budget_cumulative.sh place_cup_normal
+```
+
 ## Native Franka placement-like task
 
 `franka_bin_stack_normal` reuses IsaacLab's upstream
@@ -256,15 +298,31 @@ HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh franka_bin_stack_normal 100
 ## Franka place cup
 
 `place_cup_normal` and `place_cup_sphere` are built from the same control and
-cup setup as `franka_pick_cup`, then add one target box. The cup starts closer
-to the arm, while the box starts farther away.
+cup setup as `franka_pick_cup`, then add one target box. The cup starts already
+grasped in the Franka gripper, while the box starts farther away.
 
-The intended demo is: move above the cup, grasp it from the top, lift it, move
-above the box, lower it, open the gripper, and retreat.
+The intended demo is: carry the already-grasped cup above the box, lower it,
+open the gripper, and retreat.
 
 ```bash
 cd /home/ntruong/Truong/isaaclab_data_generation
 bash scripts/collect_raw.sh place_cup_normal 10
+HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh place_cup_normal 1000
+```
+
+MimicGen splits `place_cup` into two subtasks:
+
+```text
+1. place_and_release: move the already-grasped cup into the box, then open the gripper
+2. retreat: move the gripper away after release
+```
+
+The split signal is `release`, which turns true when the cup is inside the box
+and the Franka fingers have opened. By default the split is exact; to randomize
+the boundary by a few frames, set:
+
+```bash
+RELEASE_OFFSET_MIN=0 RELEASE_OFFSET_MAX=5 \
 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh place_cup_normal 1000
 ```
 
@@ -290,9 +348,9 @@ To write to another source folder:
 bash scripts/collect_place_cup_normal_50.sh data/source/place_cup_normal_test
 ```
 
-For the normal task, recording starts automatically when the `grasp` subtask
-turns true, so the exported HDF5 starts from the already-grasped cup state.
-For the sphere task, recording starts when the gripper reaches the box sphere:
+For the normal task, recording starts from reset because the cup is already
+grasped at reset. For the sphere task, recording starts when the gripper reaches
+the box sphere:
 
 ```bash
 bash scripts/collect_raw.sh place_cup_sphere 10

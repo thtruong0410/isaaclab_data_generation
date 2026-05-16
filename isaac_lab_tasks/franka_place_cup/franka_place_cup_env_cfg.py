@@ -128,6 +128,29 @@ def cup_is_placed_in_box_and_released(
     return torch.logical_and(placed_and_open, min_finger_dist > no_contact_distance)
 
 
+def cup_is_released_in_box(
+    env: ManagerBasedRLEnv,
+    *,
+    robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+    box_cfg: SceneEntityCfg = SceneEntityCfg("box"),
+    xy_threshold: float = 0.085,
+    height_diff: float = 0.08,
+    height_threshold: float = 0.06,
+) -> torch.Tensor:
+    """Subtask signal: cup is in the box and the gripper has opened to release it."""
+
+    return place_mdp.object_a_is_into_b(
+        env,
+        robot_cfg=robot_cfg,
+        object_a_cfg=cup_cfg,
+        object_b_cfg=box_cfg,
+        xy_threshold=xy_threshold,
+        height_diff=height_diff,
+        height_threshold=height_threshold,
+    ).unsqueeze(-1).float()
+
+
 def cup_is_grasped(
     env: ManagerBasedRLEnv,
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -202,6 +225,7 @@ class EventCfg:
 @configclass
 class _PlaceCupSubtaskTermsCfg(ObsGroup):
     grasp = ObsTerm(func=cup_is_grasped)
+    release = ObsTerm(func=cup_is_released_in_box)
 
     def __post_init__(self):
         self.enable_corruption = False

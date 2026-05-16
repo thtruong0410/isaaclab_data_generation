@@ -117,6 +117,12 @@ fi
 if [ -n "${GRASP_OFFSET_MAX-}" ]; then
     bash_env+=("${MIMIC_ENV_VAR_PREFIX}_GRASP_OFFSET_MAX=$GRASP_OFFSET_MAX")
 fi
+if [ -n "${RELEASE_OFFSET_MIN-}" ]; then
+    bash_env+=("${MIMIC_ENV_VAR_PREFIX}_RELEASE_OFFSET_MIN=$RELEASE_OFFSET_MIN")
+fi
+if [ -n "${RELEASE_OFFSET_MAX-}" ]; then
+    bash_env+=("${MIMIC_ENV_VAR_PREFIX}_RELEASE_OFFSET_MAX=$RELEASE_OFFSET_MAX")
+fi
 if [ -n "${NN_K-}" ]; then
     bash_env+=("${MIMIC_ENV_VAR_PREFIX}_NN_K=$NN_K")
 fi
