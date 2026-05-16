@@ -99,9 +99,9 @@ def cup_is_placed_in_box_and_released(
     cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     box_cfg: SceneEntityCfg = SceneEntityCfg("box"),
     ee_frame_cfg: SceneEntityCfg = SceneEntityCfg("ee_frame"),
-    xy_threshold: float = 0.085,
+    xy_threshold: float = 0.08,
     height_diff: float = 0.08,
-    height_threshold: float = 0.06,
+    height_threshold: float = 0.055,
     no_contact_distance: float = 0.065,
 ) -> torch.Tensor:
     """Success: gripper is open, cup is in the box, and fingers have retreated from the cup."""
@@ -134,9 +134,9 @@ def cup_is_released_in_box(
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     box_cfg: SceneEntityCfg = SceneEntityCfg("box"),
-    xy_threshold: float = 0.085,
+    xy_threshold: float = 0.08,
     height_diff: float = 0.08,
-    height_threshold: float = 0.06,
+    height_threshold: float = 0.055,
 ) -> torch.Tensor:
     """Subtask signal: cup is in the box and the gripper has opened to release it."""
 

@@ -15,7 +15,7 @@ gym.register(
 
 gym.register(
     id="Isaac-Place-Cup-Franka-IK-Rel-Mimic-v0",
-    entry_point="isaaclab_mimic.envs.pick_place_mimic_env:PickPlaceRelMimicEnv",
+    entry_point="isaac_lab_tasks.franka_place_cup.place_cup_mimic_env:PlaceCupRelMimicEnv",
     kwargs={
         "env_cfg_entry_point": (
             "isaac_lab_tasks.franka_place_cup.franka_place_cup_mimic_env_cfg:FrankaPlaceCupMimicEnvCfg"
