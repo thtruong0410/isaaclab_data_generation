@@ -40,7 +40,8 @@ CUP_INIT_POS = (0.40, -0.26, 0.065)
 BOX_INIT_POS = (0.68, 0.22, 0.0203)
 ARM_JOINT_RESET_STD = 0.02
 FRANKA_ARM_DEFAULT_POSE = [-0.38, -0.0194, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0, 0.0]
-CUP_RIM_OFFSET_IN_HAND = (0.025, -0.092, 0.212)
+EE_TCP_OFFSET_IN_HAND = (0.0, 0.0, 0.107)
+CUP_OFFSET_IN_EE_FRAME = (0.025, -0.092, 0.105)
 CUP_GRASP_FINGER_POS = 0.008
 
 
@@ -51,12 +52,13 @@ def reset_cup_to_gripper(
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     hand_body_name: str = "panda_hand",
-    cup_rim_offset_in_hand: tuple[float, float, float] = CUP_RIM_OFFSET_IN_HAND,
+    ee_tcp_offset_in_hand: tuple[float, float, float] = EE_TCP_OFFSET_IN_HAND,
+    cup_offset_in_ee_frame: tuple[float, float, float] = CUP_OFFSET_IN_EE_FRAME,
     gripper_joint_pos: float = CUP_GRASP_FINGER_POS,
 ) -> None:
     """Initialize the cup from the randomized gripper pose with the fingers closed on its rim.
 
-    The cup follows the gripper frame on reset instead of being clamped to a table-relative z.
+    The cup follows the gripper TCP frame on reset instead of being clamped to a table-relative z.
     """
 
     robot: Articulation = env.scene[robot_cfg.name]
@@ -78,8 +80,10 @@ def reset_cup_to_gripper(
     body_ids, _ = robot.find_bodies([hand_body_name], preserve_order=True)
     hand_pos = robot.data.body_pos_w[env_ids, body_ids[0], :3]
     hand_quat = robot.data.body_quat_w[env_ids, body_ids[0], :]
-    offset = torch.tensor(cup_rim_offset_in_hand, device=env.device, dtype=hand_pos.dtype).expand_as(hand_pos)
-    cup_pos = hand_pos + math_utils.quat_apply(hand_quat, offset)
+    tcp_offset = torch.tensor(ee_tcp_offset_in_hand, device=env.device, dtype=hand_pos.dtype).expand_as(hand_pos)
+    cup_offset = torch.tensor(cup_offset_in_ee_frame, device=env.device, dtype=hand_pos.dtype).expand_as(hand_pos)
+    tcp_pos = hand_pos + math_utils.quat_apply(hand_quat, tcp_offset)
+    cup_pos = tcp_pos + math_utils.quat_apply(hand_quat, cup_offset)
     cup_quat = torch.tensor((1.0, 0.0, 0.0, 0.0), device=env.device, dtype=hand_pos.dtype).repeat(len(env_ids), 1)
     cup.write_root_pose_to_sim(torch.cat((cup_pos, cup_quat), dim=-1), env_ids=env_ids)
     cup.write_root_velocity_to_sim(torch.zeros((len(env_ids), 6), device=env.device), env_ids=env_ids)
@@ -170,7 +174,8 @@ class EventCfg:
         params={
             "robot_cfg": SceneEntityCfg("robot"),
             "cup_cfg": SceneEntityCfg("object"),
-            "cup_rim_offset_in_hand": CUP_RIM_OFFSET_IN_HAND,
+            "ee_tcp_offset_in_hand": EE_TCP_OFFSET_IN_HAND,
+            "cup_offset_in_ee_frame": CUP_OFFSET_IN_EE_FRAME,
             "gripper_joint_pos": CUP_GRASP_FINGER_POS,
         },
     )
