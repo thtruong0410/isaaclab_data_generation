@@ -137,6 +137,9 @@ def apply_collection_diversity(
     rng = random.Random(demo_seed)
     bucket = _resolve_bucket(bucket_preset, bucket_index)
 
+    explicit_x_range = object_x_range is not None
+    explicit_y_range = object_y_range is not None
+    explicit_yaw_range = object_yaw_range is not None
     x_range = object_x_range if object_x_range is not None else bucket["object_x_range"]
     y_range = object_y_range if object_y_range is not None else bucket["object_y_range"]
     yaw_range = object_yaw_range if object_yaw_range is not None else bucket["object_yaw_range"]
@@ -155,11 +158,30 @@ def apply_collection_diversity(
     applied_z_range = (0.0, 0.0)
     if pose_reset_event_name == "reset_box_pose":
         base_pose_range = pose_reset_event.params.get("pose_range", {})
-        base_x = _range_center(base_pose_range.get("x", (0.0, 0.0)))
-        base_y = _range_center(base_pose_range.get("y", (0.0, 0.0)))
-        applied_x_range = _offset_range(base_x, x_range)
-        applied_y_range = _offset_range(base_y, y_range)
+        base_x_range = base_pose_range.get("x", (0.0, 0.0))
+        base_y_range = base_pose_range.get("y", (0.0, 0.0))
+        base_yaw_range = base_pose_range.get("yaw", yaw_range)
         applied_z_range = base_pose_range.get("z", applied_z_range)
+        if bucket_preset in ("coverage20", "hard12") and not explicit_x_range and not explicit_y_range:
+            applied_x_range, applied_y_range, bucket_yaw_range = _resolve_range_bucket(
+                bucket_preset,
+                bucket_index,
+                x_range=base_x_range,
+                y_range=base_y_range,
+                yaw_range=base_yaw_range,
+            )
+            if not explicit_yaw_range:
+                yaw_range = bucket_yaw_range
+        elif bucket_preset == "none" and not explicit_x_range and not explicit_y_range:
+            applied_x_range = base_x_range
+            applied_y_range = base_y_range
+            if not explicit_yaw_range:
+                yaw_range = base_yaw_range
+        else:
+            base_x = _range_center(base_x_range)
+            base_y = _range_center(base_y_range)
+            applied_x_range = _offset_range(base_x, x_range)
+            applied_y_range = _offset_range(base_y, y_range)
 
     if pose_reset_event is not None:
         pose_reset_event.params["pose_range"] = {
@@ -245,6 +267,37 @@ def _resolve_bucket(bucket_preset: str, bucket_index: int) -> dict[str, tuple[fl
         f"Unsupported bucket preset '{bucket_preset}'. "
         "Supported presets: none, coverage20, hard12."
     )
+
+
+def _resolve_range_bucket(
+    bucket_preset: str,
+    bucket_index: int,
+    *,
+    x_range: tuple[float, float],
+    y_range: tuple[float, float],
+    yaw_range: tuple[float, float],
+) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
+    if bucket_preset == "coverage20":
+        x_bins, y_bins, yaw_bins = 5, 4, 5
+    elif bucket_preset == "hard12":
+        x_bins, y_bins, yaw_bins = 4, 3, 5
+    else:
+        raise ValueError(f"Unsupported range bucket preset '{bucket_preset}'.")
+
+    x_idx = bucket_index % x_bins
+    y_idx = (bucket_index // x_bins) % y_bins
+    yaw_idx = (x_idx + 2 * y_idx) % yaw_bins
+    return (
+        _split_range(x_range, x_idx, x_bins),
+        _split_range(y_range, y_idx, y_bins),
+        _split_range(yaw_range, yaw_idx, yaw_bins),
+    )
+
+
+def _split_range(value_range: tuple[float, float], index: int, bins: int) -> tuple[float, float]:
+    start, end = value_range
+    width = (end - start) / bins
+    return start + index * width, start + (index + 1) * width
 
 
 def _make_range(center: float, *, half_width: float) -> tuple[float, float]:
