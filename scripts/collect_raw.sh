@@ -25,10 +25,6 @@ EE_TARGET_LINE_THICKNESS="${EE_TARGET_LINE_THICKNESS:-}"
 START_RECORD_ON_SUBTASK="${START_RECORD_ON_SUBTASK:-}"
 START_RECORD_ON_SUBTASK_STEPS="${START_RECORD_ON_SUBTASK_STEPS:-}"
 
-if [[ "$SPEC" == place_cup* ]]; then
-    DRAW_EE_TARGET_LINE=0
-fi
-
 ensure_data_env
 print_env_summary
 check_isaac_runtime

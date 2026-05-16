@@ -8,7 +8,7 @@ import time
 
 from isaaclab.app import AppLauncher
 
-from .debug_visualization import EeTargetLineVisualizer, ee_to_cup_vector_text
+from .debug_visualization import EeTargetLineVisualizer, ee_to_box_vector_text
 from .demo_collection_utils import ActionSmoother, build_teleop_device, reset_teleop_device
 from .runtime import ensure_project_root_on_path, import_registration_modules
 from .types import TaskSuiteSpec
@@ -56,9 +56,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
     )
     AppLauncher.add_app_launcher_args(parser)
     args_cli = parser.parse_args(forwarded_argv)
-    show_ee_cup_vector = spec.key.startswith("place_cup")
-    if show_ee_cup_vector:
-        args_cli.draw_ee_target_line = False
+    show_ee_box_vector = spec.key.startswith("place_cup")
     start_record_on_subtask = args_cli.start_record_on_subtask
     if start_record_on_subtask is None:
         start_record_on_subtask = spec.normal_start_record_on_subtask
@@ -165,16 +163,16 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
             label_ref[0] = ui.Label(f"Recorded: {recorded} demos")
 
         def update_label():
-            cup_vector_text = ee_to_cup_vector_text(env) if show_ee_cup_vector else ""
+            box_vector_text = ee_to_box_vector_text(env) if show_ee_box_vector else ""
             if start_record_on_subtask is None:
-                label_ref[0].text = f"Recorded: {recorded} demos{cup_vector_text}"
+                label_ref[0].text = f"Recorded: {recorded} demos{box_vector_text}"
                 return
             label_ref[0].text = (
                 f"Recorded: {recorded} demos | "
                 f"Recording: {'YES ●' if recording_started else 'no ○'} | "
                 f"gate={start_record_on_subtask} | "
                 f"streak={gate_count}/{start_record_on_subtask_steps}"
-                f"{cup_vector_text}"
+                f"{box_vector_text}"
             )
 
         env.sim.reset()

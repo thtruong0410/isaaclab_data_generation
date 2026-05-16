@@ -275,6 +275,9 @@ cd /home/ntruong/Truong/isaaclab_data_generation
 bash scripts/collect_place_cup_normal_50.sh
 ```
 
+This helper enables viewport debug axes by default. The red/green/blue axes
+show the X/Y/Z components from the gripper center to the box center.
+
 The default output folder is:
 
 ```text

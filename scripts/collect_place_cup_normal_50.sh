@@ -11,6 +11,9 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)"
 
 OUTPUT_DIR="${1:-$PROJECT_ROOT/data/source/place_cup_normal}"
 
+export DRAW_EE_TARGET_LINE="${DRAW_EE_TARGET_LINE:-1}"
+export EE_TARGET_VIS_MODE="${EE_TARGET_VIS_MODE:-axes}"
+
 bash "$SCRIPT_DIR/collect_raw.sh" \
     place_cup_normal \
     50 \

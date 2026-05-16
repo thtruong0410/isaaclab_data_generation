@@ -97,7 +97,7 @@ class EeTargetLineVisualizer:
         if "door" in self.spec.key:
             return self._door_handle_positions(env)
         if self.spec.key.startswith("place_cup"):
-            return self._cup_positions(env).unsqueeze(1)
+            return self._box_positions(env).unsqueeze(1)
         return self._cabinet_frame_target_pos(env).unsqueeze(1)
 
     def _cup_positions(self, env) -> torch.Tensor:
@@ -105,6 +105,9 @@ class EeTargetLineVisualizer:
             return _as_xyz(env.scene["object"].data.root_pos_w)
         except Exception:
             return _as_xyz(env.scene["cup"].data.root_pos_w)
+
+    def _box_positions(self, env) -> torch.Tensor:
+        return _as_xyz(env.scene["box"].data.root_pos_w)
 
     def _door_handle_positions(self, env) -> torch.Tensor:
         from isaac_lab_tasks.franka_open_door.franka_open_door_env_cfg import resolve_door_target_variants
@@ -146,15 +149,32 @@ class EeTargetLineVisualizer:
 def ee_to_cup_vector_text(env) -> str:
     """Return a compact one-line vector from gripper center to cup center."""
 
+    return _ee_to_asset_vector_text(env, ("object", "cup"), "cup")
+
+
+def ee_to_box_vector_text(env) -> str:
+    """Return a compact one-line vector from gripper center to box center."""
+
+    return _ee_to_asset_vector_text(env, ("box",), "box")
+
+
+def _ee_to_asset_vector_text(env, asset_names: tuple[str, ...], label: str) -> str:
+    """Return a compact one-line vector from gripper center to a named scene asset."""
+
     try:
         ee_pos = _as_xyz(env.scene["ee_frame"].data.target_pos_w)[0].detach()
-        try:
-            cup_pos = _as_xyz(env.scene["object"].data.root_pos_w)[0].detach()
-        except Exception:
-            cup_pos = _as_xyz(env.scene["cup"].data.root_pos_w)[0].detach()
-        delta = cup_pos - ee_pos
+        target_pos = None
+        for asset_name in asset_names:
+            try:
+                target_pos = _as_xyz(env.scene[asset_name].data.root_pos_w)[0].detach()
+                break
+            except Exception:
+                continue
+        if target_pos is None:
+            return ""
+        delta = target_pos - ee_pos
         dist = torch.linalg.vector_norm(delta).item()
         dx, dy, dz = delta.cpu().tolist()
     except Exception:
         return ""
-    return f" | ee->cup=({dx:+.3f}, {dy:+.3f}, {dz:+.3f})m d={dist:.3f}m"
+    return f" | ee->{label}=({dx:+.3f}, {dy:+.3f}, {dz:+.3f})m d={dist:.3f}m"
