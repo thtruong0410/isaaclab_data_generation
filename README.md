@@ -268,6 +268,25 @@ bash scripts/collect_raw.sh place_cup_normal 10
 HEADLESS=1 NUM_ENVS=1 bash scripts/mimic_generate.sh place_cup_normal 1000
 ```
 
+To collect the full 50 normal place-cup source demos continuously:
+
+```bash
+cd /home/ntruong/Truong/isaaclab_data_generation
+bash scripts/collect_place_cup_normal_50.sh
+```
+
+The default output folder is:
+
+```text
+data/source/place_cup_normal
+```
+
+To write to another source folder:
+
+```bash
+bash scripts/collect_place_cup_normal_50.sh data/source/place_cup_normal_test
+```
+
 For the normal task, recording starts automatically when the `grasp` subtask
 turns true, so the exported HDF5 starts from the already-grasped cup state.
 For the sphere task, recording starts when the gripper reaches the box sphere:
