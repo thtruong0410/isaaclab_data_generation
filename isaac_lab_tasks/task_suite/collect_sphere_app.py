@@ -9,7 +9,7 @@ import time
 from isaaclab.app import AppLauncher
 
 from .debug_visualization import EeTargetLineVisualizer, ee_to_cup_vector_text
-from .demo_collection_utils import ActionSmoother, apply_collection_diversity, build_teleop_device
+from .demo_collection_utils import ActionSmoother, apply_collection_diversity, build_teleop_device, reset_teleop_device
 from .runtime import ensure_project_root_on_path, import_object_by_path, import_registration_modules
 from .types import TaskSuiteSpec
 
@@ -213,6 +213,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
             )
 
             smoother = ActionSmoother(smoothing_alpha)
+            start_with_closed_gripper = spec.key.startswith("place_cup")
             rate_limiter.hz = step_hz
             rate_limiter.sleep_duration = 1.0 / step_hz
             rate_limiter.render_period = min(0.033, rate_limiter.sleep_duration)
@@ -240,7 +241,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
 
             env.sim.reset()
             env.reset()
-            teleop.reset()
+            reset_teleop_device(teleop, close_gripper=start_with_closed_gripper)
             smoother.reset()
 
             print(
@@ -303,7 +304,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                             env.sim.reset()
                         env.recorder_manager.reset()
                         env.reset()
-                        teleop.reset()
+                        reset_teleop_device(teleop, close_gripper=start_with_closed_gripper)
                         smoother.reset()
                         success_count = 0
                         print("[TaskSuite] Reset: not recording yet. Waiting for sphere entry.")

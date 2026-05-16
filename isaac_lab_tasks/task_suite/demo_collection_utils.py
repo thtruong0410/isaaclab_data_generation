@@ -109,6 +109,14 @@ def build_teleop_device(
     return teleop, controls, pos_sensitivity, rot_sensitivity
 
 
+def reset_teleop_device(teleop, *, close_gripper: bool = False) -> None:
+    """Reset teleop command state, optionally starting with a closed gripper command."""
+
+    teleop.reset()
+    if close_gripper and hasattr(teleop, "_close_gripper"):
+        teleop._close_gripper = True
+
+
 def apply_collection_diversity(
     env_cfg,
     *,

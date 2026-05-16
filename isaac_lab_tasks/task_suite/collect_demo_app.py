@@ -9,7 +9,7 @@ import time
 from isaaclab.app import AppLauncher
 
 from .debug_visualization import EeTargetLineVisualizer, ee_to_cup_vector_text
-from .demo_collection_utils import ActionSmoother, build_teleop_device
+from .demo_collection_utils import ActionSmoother, build_teleop_device, reset_teleop_device
 from .runtime import ensure_project_root_on_path, import_registration_modules
 from .types import TaskSuiteSpec
 
@@ -151,6 +151,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
         )
         smoother = ActionSmoother(smoothing_alpha)
         rate_limiter = RateLimiter(step_hz)
+        start_with_closed_gripper = spec.key.startswith("place_cup")
 
         should_reset = False
         recorded = 0
@@ -178,7 +179,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
 
         env.sim.reset()
         env.reset()
-        teleop.reset()
+        reset_teleop_device(teleop, close_gripper=start_with_closed_gripper)
         smoother.reset()
 
         print(
@@ -251,7 +252,7 @@ def run_cli(spec: TaskSuiteSpec, forwarded_argv: list[str]) -> None:
                         env.sim.reset()
                     env.recorder_manager.reset()
                     env.reset()
-                    teleop.reset()
+                    reset_teleop_device(teleop, close_gripper=start_with_closed_gripper)
                     smoother.reset()
                     success_count = 0
                     gate_count = 0
