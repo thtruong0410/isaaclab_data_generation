@@ -143,18 +143,29 @@ def apply_collection_diversity(
 
     pose_reset_event_name = None
     pose_reset_event = None
-    for event_name in ("reset_object_position", "reset_object_pose", "reset_target_position"):
+    for event_name in ("reset_object_position", "reset_object_pose", "reset_target_position", "reset_box_pose"):
         candidate = getattr(getattr(env_cfg, "events", None), event_name, None)
         if candidate is not None and hasattr(candidate, "params"):
             pose_reset_event_name = event_name
             pose_reset_event = candidate
             break
 
+    applied_x_range = x_range
+    applied_y_range = y_range
+    applied_z_range = (0.0, 0.0)
+    if pose_reset_event_name == "reset_box_pose":
+        base_pose_range = pose_reset_event.params.get("pose_range", {})
+        base_x = _range_center(base_pose_range.get("x", (0.0, 0.0)))
+        base_y = _range_center(base_pose_range.get("y", (0.0, 0.0)))
+        applied_x_range = _offset_range(base_x, x_range)
+        applied_y_range = _offset_range(base_y, y_range)
+        applied_z_range = base_pose_range.get("z", applied_z_range)
+
     if pose_reset_event is not None:
         pose_reset_event.params["pose_range"] = {
-            "x": x_range,
-            "y": y_range,
-            "z": (0.0, 0.0),
+            "x": applied_x_range,
+            "y": applied_y_range,
+            "z": applied_z_range,
             "yaw": yaw_range,
         }
 
@@ -186,8 +197,8 @@ def apply_collection_diversity(
     return {
         "bucket_preset": bucket_preset,
         "bucket_index": bucket_index,
-        "object_x_range": x_range,
-        "object_y_range": y_range,
+        "object_x_range": applied_x_range,
+        "object_y_range": applied_y_range,
         "object_yaw_range": yaw_range,
         "pose_randomization_applied": pose_reset_event is not None,
         "pose_reset_event_name": pose_reset_event_name,
@@ -238,6 +249,14 @@ def _resolve_bucket(bucket_preset: str, bucket_index: int) -> dict[str, tuple[fl
 
 def _make_range(center: float, *, half_width: float) -> tuple[float, float]:
     return (center - half_width, center + half_width)
+
+
+def _range_center(value_range: tuple[float, float]) -> float:
+    return 0.5 * (value_range[0] + value_range[1])
+
+
+def _offset_range(center: float, value_range: tuple[float, float]) -> tuple[float, float]:
+    return center + value_range[0], center + value_range[1]
 
 
 def _jitter_camera(offset_cfg, *, pos_jitter_m: float, rot_jitter_deg: float, rng: random.Random) -> None:
