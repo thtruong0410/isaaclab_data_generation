@@ -38,8 +38,11 @@ if TYPE_CHECKING:
 
 CUP_INIT_POS = (0.40, -0.26, 0.065)
 BOX_INIT_POS = (0.68, 0.22, 0.0203)
+BOX_X_RANGE = (0.58, 0.76)
+BOX_Y_RANGE = (0.12, 0.34)
+BOX_YAW_RANGE = (-0.25, 0.25)
 ARM_JOINT_RESET_STD = 0.02
-FRANKA_ARM_DEFAULT_POSE = [-0.38, -0.0194, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0, 0.0]
+FRANKA_ARM_DEFAULT_POSE = [-0.38, -0.0694, -0.1107, -2.5148, 0.0044, 2.3775, 0.6952, 0.0, 0.0]
 EE_TCP_OFFSET_IN_HAND = (0.0, 0.0, 0.107)
 CUP_OFFSET_IN_EE_FRAME = (0.025, -0.000, 0.005)
 CUP_GRASP_FINGER_POS = 0.008
@@ -185,10 +188,10 @@ class EventCfg:
         mode="reset",
         params={
             "pose_range": {
-                "x": (BOX_INIT_POS[0], BOX_INIT_POS[0]),
-                "y": (BOX_INIT_POS[1], BOX_INIT_POS[1]),
+                "x": BOX_X_RANGE,
+                "y": BOX_Y_RANGE,
                 "z": (BOX_INIT_POS[2], BOX_INIT_POS[2]),
-                "yaw": (0.0, 0.0),
+                "yaw": BOX_YAW_RANGE,
             },
             "min_separation": 0.0,
             "asset_cfgs": [SceneEntityCfg("box")],
