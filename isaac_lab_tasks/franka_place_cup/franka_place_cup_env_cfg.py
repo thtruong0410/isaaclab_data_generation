@@ -99,10 +99,10 @@ def cup_is_placed_in_box_and_released(
     cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     box_cfg: SceneEntityCfg = SceneEntityCfg("box"),
     ee_frame_cfg: SceneEntityCfg = SceneEntityCfg("ee_frame"),
-    xy_threshold: float = 0.08,
-    height_diff: float = 0.08,
-    height_threshold: float = 0.055,
-    no_contact_distance: float = 0.065,
+    xy_threshold: float = 0.10,
+    height_diff: float = 0.10,
+    height_threshold: float = 0.075,
+    no_contact_distance: float = 0.04,
 ) -> torch.Tensor:
     """Success: gripper is open, cup is in the box, and fingers have retreated from the cup."""
 
@@ -134,9 +134,9 @@ def cup_is_released_in_box(
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     cup_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     box_cfg: SceneEntityCfg = SceneEntityCfg("box"),
-    xy_threshold: float = 0.08,
-    height_diff: float = 0.08,
-    height_threshold: float = 0.055,
+    xy_threshold: float = 0.10,
+    height_diff: float = 0.10,
+    height_threshold: float = 0.075,
 ) -> torch.Tensor:
     """Subtask signal: cup is in the box and the gripper has opened to release it."""
 
@@ -283,7 +283,7 @@ class FrankaPlaceCupEnvCfg(FrankaCubeLiftEnvCfg):
 
         self.gripper_joint_names = ["panda_finger_.*"]
         self.gripper_open_val = 0.04
-        self.gripper_threshold = 0.005
+        self.gripper_threshold = 0.015
 
         marker_cfg = FRAME_MARKER_CFG.copy()
         marker_cfg.markers["frame"].scale = (0.1, 0.1, 0.1)
