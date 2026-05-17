@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 import torch
@@ -46,6 +47,68 @@ FRANKA_ARM_DEFAULT_POSE = [-0.38, -0.3194, -0.1107, -2.5148, 0.0044, 2.3775, 0.6
 EE_TCP_OFFSET_IN_HAND = (0.0, 0.0, 0.107)
 CUP_OFFSET_IN_EE_FRAME = (0.025, -0.000, 0.005)
 CUP_GRASP_FINGER_POS = 0.008
+
+
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _log_place_cup_success_debug(
+    env: ManagerBasedRLEnv,
+    *,
+    label: str,
+    robot: Articulation,
+    cup: RigidObject,
+    box: RigidObject,
+    xy_threshold: float,
+    height_diff: float,
+    height_threshold: float,
+    gripper_open_val: float,
+    gripper_threshold: float,
+    min_finger_dist: torch.Tensor | None = None,
+    no_contact_distance: float | None = None,
+) -> None:
+    """Print compact success-condition diagnostics when requested by env var."""
+
+    debug_flag = "PLACE_CUP_DEBUG_RELEASE" if label == "release" else "PLACE_CUP_DEBUG_SUCCESS"
+    if not _env_flag(debug_flag):
+        return
+
+    pos_diff = cup.data.root_pos_w - box.data.root_pos_w
+    xy_dist = torch.linalg.vector_norm(pos_diff[:, :2], dim=1)
+    height_dist = torch.linalg.vector_norm(pos_diff[:, 2:], dim=1)
+    xy_ok = xy_dist < xy_threshold
+    height_ok = (height_dist - height_diff) < height_threshold
+
+    finger_ids, _ = robot.find_joints(env.cfg.gripper_joint_names)
+    finger_pos = torch.abs(robot.data.joint_pos[:, finger_ids])
+    gripper_err = torch.abs(finger_pos - gripper_open_val)
+    gripper_ok = torch.all(gripper_err < gripper_threshold, dim=1)
+
+    base_ok = xy_ok & height_ok & gripper_ok
+    if min_finger_dist is not None and no_contact_distance is not None:
+        no_contact_ok = min_finger_dist > no_contact_distance
+        success = base_ok & no_contact_ok
+    else:
+        no_contact_ok = None
+        success = base_ok
+
+    for env_id in range(cup.data.root_pos_w.shape[0]):
+        msg = (
+            f"[place_cup][{label}] env={env_id} success={bool(success[env_id])} "
+            f"xy={xy_dist[env_id].item():.4f}<{xy_threshold:.4f}:{bool(xy_ok[env_id])} "
+            f"height={height_dist[env_id].item():.4f} diff={height_diff:.4f} "
+            f"thr={height_threshold:.4f}:{bool(height_ok[env_id])} "
+            f"finger={finger_pos[env_id].detach().cpu().tolist()} "
+            f"open_err={gripper_err[env_id].detach().cpu().tolist()} "
+            f"open_thr={gripper_threshold:.4f}:{bool(gripper_ok[env_id])}"
+        )
+        if no_contact_ok is not None:
+            msg += (
+                f" min_finger_dist={min_finger_dist[env_id].item():.4f}"
+                f">{no_contact_distance:.4f}:{bool(no_contact_ok[env_id])}"
+            )
+        print(msg)
 
 
 def reset_cup_to_gripper(
@@ -117,6 +180,8 @@ def cup_is_placed_in_box_and_released(
     )
 
     cup: RigidObject = env.scene[cup_cfg.name]
+    box: RigidObject = env.scene[box_cfg.name]
+    robot: Articulation = env.scene[robot_cfg.name]
     ee_frame: FrameTransformer = env.scene[ee_frame_cfg.name]
     cup_pos = cup.data.root_pos_w
     target_pos = ee_frame.data.target_pos_w
@@ -125,7 +190,22 @@ def cup_is_placed_in_box_and_released(
         min_finger_dist = torch.linalg.vector_norm(finger_pos - cup_pos.unsqueeze(1), dim=-1).min(dim=1).values
     else:
         min_finger_dist = torch.linalg.vector_norm(target_pos[:, 0, :3] - cup_pos, dim=1)
-    return torch.logical_and(placed_and_open, min_finger_dist > no_contact_distance)
+    success = torch.logical_and(placed_and_open, min_finger_dist > no_contact_distance)
+    _log_place_cup_success_debug(
+        env,
+        label="final",
+        robot=robot,
+        cup=cup,
+        box=box,
+        xy_threshold=xy_threshold,
+        height_diff=height_diff,
+        height_threshold=height_threshold,
+        gripper_open_val=env.cfg.gripper_open_val,
+        gripper_threshold=env.cfg.gripper_threshold,
+        min_finger_dist=min_finger_dist,
+        no_contact_distance=no_contact_distance,
+    )
+    return success
 
 
 def cup_is_released_in_box(
@@ -140,7 +220,7 @@ def cup_is_released_in_box(
 ) -> torch.Tensor:
     """Subtask signal: cup is in the box and the gripper has opened to release it."""
 
-    return place_mdp.object_a_is_into_b(
+    released = place_mdp.object_a_is_into_b(
         env,
         robot_cfg=robot_cfg,
         object_a_cfg=cup_cfg,
@@ -148,7 +228,20 @@ def cup_is_released_in_box(
         xy_threshold=xy_threshold,
         height_diff=height_diff,
         height_threshold=height_threshold,
-    ).unsqueeze(-1).float()
+    )
+    _log_place_cup_success_debug(
+        env,
+        label="release",
+        robot=env.scene[robot_cfg.name],
+        cup=env.scene[cup_cfg.name],
+        box=env.scene[box_cfg.name],
+        xy_threshold=xy_threshold,
+        height_diff=height_diff,
+        height_threshold=height_threshold,
+        gripper_open_val=env.cfg.gripper_open_val,
+        gripper_threshold=env.cfg.gripper_threshold,
+    )
+    return released.unsqueeze(-1).float()
 
 
 def cup_is_grasped(
